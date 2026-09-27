@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { useLang } from "@/lib/i18n";
@@ -20,6 +20,9 @@ interface Trip {
   id: string;
   driver_id: string;
   trip_date: string;
+  trip_number: string | null;
+  from_location: string;
+  to_location: string;
   miles: number;
   hours: number | null;
 }
@@ -44,6 +47,7 @@ export default function OwnerDashboard() {
   const [error, setError] = useState("");
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [receiptLoading, setReceiptLoading] = useState<string | null>(null);
+  const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
 
   const range = payPeriodRange(payPeriod, periodOffset);
   const startISO = toISODate(range.start);
@@ -71,7 +75,7 @@ export default function OwnerDashboard() {
           .order("name"),
         supabase
           .from("trips")
-          .select("id,driver_id,trip_date,miles,hours")
+          .select("id,driver_id,trip_date,trip_number,from_location,to_location,miles,hours")
           .gte("trip_date", startISO)
           .lte("trip_date", endISO),
         supabase
@@ -196,21 +200,76 @@ export default function OwnerDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {summary.map((s) => (
-                  <tr key={s.driver.id}>
-                    <td>
-                      <strong>{s.driver.name}</strong>
-                      <div className="muted" style={{ fontSize: 13 }}>
-                        {s.tripCount} {t("tripsCount")} · {rateLabel(s.driver)}
-                        {s.driver.pay_type === "hourly" &&
-                          ` · ${s.hours.toLocaleString()} ${t("hours").toLowerCase()}`}
-                      </div>
-                    </td>
-                    <td className="num">{s.miles.toLocaleString()}</td>
-                    <td className="num">{cad(s.pay)}</td>
-                    <td className="num">{cad(s.expTotal)}</td>
-                  </tr>
-                ))}
+                {summary.map((s) => {
+                  const dTrips = trips
+                    .filter((x) => x.driver_id === s.driver.id)
+                    .sort((a, b) => (a.trip_date < b.trip_date ? 1 : -1));
+                  const isOpen = expandedDriver === s.driver.id;
+                  return (
+                    <Fragment key={s.driver.id}>
+                      <tr>
+                        <td>
+                          <strong
+                            onClick={() =>
+                              setExpandedDriver(isOpen ? null : s.driver.id)
+                            }
+                            style={{
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                            }}
+                          >
+                            {s.driver.name} {isOpen ? "▾" : "▸"}
+                          </strong>
+                          <div className="muted" style={{ fontSize: 13 }}>
+                            {s.tripCount} {t("tripsCount")} · {rateLabel(s.driver)}
+                            {s.driver.pay_type === "hourly" &&
+                              ` · ${s.hours.toLocaleString()} ${t("hours").toLowerCase()}`}
+                          </div>
+                        </td>
+                        <td className="num">{s.miles.toLocaleString()}</td>
+                        <td className="num">{cad(s.pay)}</td>
+                        <td className="num">{cad(s.expTotal)}</td>
+                      </tr>
+                      {isOpen && (
+                        <tr>
+                          <td colSpan={4} style={{ paddingTop: 0 }}>
+                            {dTrips.length === 0 ? (
+                              <p className="muted">{t("noTripsYet")}</p>
+                            ) : (
+                              dTrips.map((tr) => (
+                                <Link
+                                  key={tr.id}
+                                  href={`/owner/trips/${tr.id}`}
+                                  className="list-item"
+                                  style={{
+                                    display: "block",
+                                    textDecoration: "none",
+                                    color: "inherit",
+                                  }}
+                                >
+                                  <div className="row">
+                                    <strong>
+                                      {tr.from_location} → {tr.to_location}
+                                    </strong>
+                                    <span>
+                                      {Number(tr.miles).toLocaleString()} mi
+                                    </span>
+                                  </div>
+                                  <div className="sub">
+                                    {prettyDate(tr.trip_date)}
+                                    {tr.trip_number
+                                      ? ` · ${t("tripNumber")}: ${tr.trip_number}`
+                                      : ""}
+                                  </div>
+                                </Link>
+                              ))
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr>
