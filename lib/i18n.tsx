@@ -138,6 +138,15 @@ const en = {
   saveExpense: "Save expense",
   expenseSaved: "Expense saved!",
   choosePhoto: "Choose photo",
+
+  // Auth hero (dark premium)
+  heroTagline: "Fleet software for small trucking companies.",
+  heroF1t: "Weekly dashboard",
+  heroF1d: "Miles, pay and expenses per driver.",
+  heroF2t: "Driver mobile app",
+  heroF2d: "Drivers log trips and expenses from the road.",
+  heroF3t: "Receipt photos",
+  heroF3d: "Snap fuel and repair receipts on the go.",
 };
 
 export type StringKey = keyof typeof en;
@@ -259,6 +268,14 @@ const pa: Record<StringKey, string> = {
   saveExpense: "Kharcha save karo",
   expenseSaved: "Kharcha save ho gaya!",
   choosePhoto: "Photo chuno",
+
+  heroTagline: "Chhoti trucking company layi fleet software.",
+  heroF1t: "Hafte da hisaab",
+  heroF1d: "Har driver de miles, pay te kharche.",
+  heroF2t: "Driver mobile app",
+  heroF2d: "Driver road to trip te kharche paun.",
+  heroF3t: "Receipt di photo",
+  heroF3d: "Diesel te repair diyan receipt kheecho.",
 };
 
 const dictionaries: Record<Lang, Record<StringKey, string>> = { en, pa };
