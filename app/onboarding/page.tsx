@@ -1,45 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { useLang } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/Header";
+import AuthHero from "@/components/AuthHero";
 
-type Role = "owner" | "driver";
-
-export default function OnboardingPage() {
+export default function SignupPage() {
   const { t } = useLang();
-  const router = useRouter();
-  const [role, setRole] = useState<Role>("owner");
-  const [companyName, setCompanyName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (role === "owner" && !companyName.trim()) {
-      setError(t("companyNameRequired"));
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
     setLoading(true);
     try {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error(t("errorGeneric"));
-
-      const { error } = await supabase.from("profiles").insert({
-        user_id: user.id,
-        role,
-        company_name: role === "owner" ? companyName.trim() : null,
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (error) throw error;
-
-      router.push(role === "owner" ? "/owner" : "/driver");
-      router.refresh();
+      setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
@@ -48,56 +42,52 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="container">
-      <div className="header">
-        <div className="brand">
-          🚛 Fleet <span>Desk</span>
+    <main className="auth-page">
+      <AuthHero />
+      <div className="auth-form-wrap">
+        <div className="auth-topbar">
+          <LanguageToggle />
         </div>
-        <LanguageToggle />
-      </div>
-
-      <div className="card">
-        <h1>{t("chooseRole")}</h1>
-        <form onSubmit={handleSubmit}>
-          {error && <div className="error-box">{error}</div>}
-
-          <div className="role-cards">
-            <button
-              type="button"
-              className={`role-card ${role === "owner" ? "selected" : ""}`}
-              onClick={() => setRole("owner")}
-            >
-              <div className="title">🚛 {t("iAmOwner")}</div>
-              <div className="desc">{t("ownerNote")}</div>
-            </button>
-            <button
-              type="button"
-              className={`role-card ${role === "driver" ? "selected" : ""}`}
-              onClick={() => setRole("driver")}
-            >
-              <div className="title">🧑‍✈️ {t("iAmDriver")}</div>
-              <div className="desc">{t("driverNote")}</div>
-            </button>
-          </div>
-
-          {role === "owner" && (
-            <div className="field">
-              <label htmlFor="company">{t("companyName")}</label>
-              <input
-                id="company"
-                type="text"
-                required
-                placeholder={t("companyNamePh")}
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-              />
-            </div>
+        <div className="card auth-card">
+          <h1>{t("createAccount")}</h1>
+          <p className="muted">{t("signupSub")}</p>
+          {done ? (
+            <div className="success-box">{t("checkEmail")}</div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              {error && <div className="error-box">{error}</div>}
+              <div className="field">
+                <label htmlFor="email">{t("email")}</label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="password">{t("password")}</label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  autoComplete="new-password"
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <button type="submit" className="btn" disabled={loading}>
+                {loading ? t("creating") : t("createAccountBtn")}
+              </button>
+            </form>
           )}
-
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? t("continuing") : t("continue")}
-          </button>
-        </form>
+          <div className="auth-links">
+            {t("haveAccount")} <Link href="/login">{t("signIn")}</Link>
+          </div>
+        </div>
       </div>
     </main>
   );
