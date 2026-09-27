@@ -438,3 +438,272 @@ table.data tfoot td {
   background: #fef3c7;
   color: #92400e;
 }
+
+/* ------------------------------------------------------------------
+   Dark premium auth — night highway. FleetDesk's own identity.
+   Used by /login, /signup, /onboarding. The in-app screens stay light.
+------------------------------------------------------------------- */
+.auth-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  background: #060d1a;
+  color: #eef2f7;
+}
+
+.auth-hero {
+  position: relative;
+  overflow: hidden;
+  flex: 1.15;
+  display: flex;
+  align-items: center;
+  padding: 48px;
+  background:
+    radial-gradient(1100px 480px at 85% 108%, rgba(245, 158, 11, 0.17), transparent 60%),
+    radial-gradient(900px 520px at 8% -12%, rgba(30, 58, 95, 0.95), transparent 62%),
+    linear-gradient(165deg, #060d1a 0%, #0b1c38 55%, #10294f 100%);
+}
+
+.auth-hero-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 440px;
+}
+
+.auth-brand {
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.auth-brand span {
+  color: #f59e0b;
+}
+
+.auth-tagline {
+  color: #b8c4d6;
+  font-size: 18px;
+  line-height: 1.5;
+  margin: 14px 0 34px;
+}
+
+.auth-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+}
+
+.auth-features li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.auth-fi {
+  font-size: 26px;
+  line-height: 1.2;
+  filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.35));
+}
+
+.auth-features strong {
+  display: block;
+  color: #ffffff;
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.auth-features small {
+  color: #93a1b8;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Highway strip along the bottom of the hero */
+.auth-road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 84px;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.6)), #090e1a;
+  border-top: 1px solid rgba(245, 158, 11, 0.28);
+  z-index: 1;
+}
+
+.auth-road-line {
+  position: absolute;
+  top: 50%;
+  left: -5%;
+  right: -5%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    #f59e0b 0 46px,
+    transparent 46px 92px
+  );
+  opacity: 0.9;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.55);
+}
+
+.auth-form-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px;
+  background:
+    radial-gradient(700px 400px at 50% 0%, rgba(30, 58, 95, 0.5), transparent 65%),
+    #060d1a;
+}
+
+.auth-topbar {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto 14px;
+}
+
+.auth-card {
+  background: #0d1a30;
+  border: 1px solid #1d2f52;
+  color: #eef2f7;
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.auth-card h1 {
+  color: #ffffff;
+}
+
+.auth-card h2 {
+  color: #ffffff;
+}
+
+.auth-card .muted,
+.auth-card p.muted {
+  color: #93a1b8;
+}
+
+.auth-card .field label {
+  color: #c7d2e4;
+}
+
+.auth-card input[type="text"],
+.auth-card input[type="email"],
+.auth-card input[type="password"],
+.auth-card input[type="number"],
+.auth-card input[type="date"],
+.auth-card input[type="tel"],
+.auth-card select {
+  background: #081226;
+  border-color: #243a61;
+  color: #eef2f7;
+}
+
+.auth-card input:focus,
+.auth-card select:focus {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+  border-color: #f59e0b;
+}
+
+.auth-card .btn {
+  background: linear-gradient(180deg, #fbbf24, #d97706);
+  color: #1a1005;
+}
+
+.auth-card .btn:hover {
+  background: #f59e0b;
+}
+
+.auth-card .btn-ghost {
+  background: transparent;
+  color: #f5b942;
+  border: 1px solid #2b4470;
+}
+
+.auth-card .btn-ghost:hover {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.auth-card .auth-links {
+  color: #93a1b8;
+}
+
+.auth-card .auth-links a {
+  color: #f5b942;
+}
+
+.auth-card .error-box {
+  background: rgba(220, 38, 38, 0.14);
+  border-color: rgba(220, 38, 38, 0.4);
+  color: #fca5a5;
+}
+
+.auth-card .success-box {
+  background: rgba(21, 128, 61, 0.16);
+  border-color: rgba(21, 128, 61, 0.45);
+  color: #86efac;
+}
+
+/* Role picker on dark */
+.auth-card .role-card {
+  background: #081226;
+  border-color: #243a61;
+  color: #eef2f7;
+}
+
+.auth-card .role-card.selected {
+  border-color: #f59e0b;
+  background: #1a1408;
+}
+
+.auth-card .role-card .desc {
+  color: #93a1b8;
+}
+
+/* Language toggle on dark */
+.auth-page .lang-toggle {
+  background: #0d1a30;
+  border-color: #243a61;
+}
+
+.auth-page .lang-toggle button {
+  color: #93a1b8;
+}
+
+.auth-page .lang-toggle button.active {
+  background: #f59e0b;
+  color: #1a1005;
+}
+
+@media (max-width: 820px) {
+  .auth-page {
+    flex-direction: column;
+  }
+  .auth-hero {
+    padding: 34px 24px 112px;
+    flex: none;
+  }
+  .auth-features {
+    display: none;
+  }
+  .auth-tagline {
+    margin-bottom: 0;
+  }
+  .auth-form-wrap {
+    padding: 26px 16px 56px;
+    justify-content: flex-start;
+  }
+  .auth-topbar,
+  .auth-card {
+    max-width: 480px;
+  }
+}
