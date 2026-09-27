@@ -29,12 +29,11 @@ export default function OwnerAddTripPage() {
 
   const [driverId, setDriverId] = useState("");
   const [date, setDate] = useState(toISODate(new Date()));
+  const [tripNo, setTripNo] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [miles, setMiles] = useState("");
   const [hours, setHours] = useState("");
-  const [fuelLitres, setFuelLitres] = useState("");
-  const [fuelCost, setFuelCost] = useState("");
   const [truckId, setTruckId] = useState("");
 
   const [error, setError] = useState("");
@@ -104,12 +103,11 @@ export default function OwnerAddTripPage() {
         owner_id: ownerId,
         driver_id: driverId,
         trip_date: date,
+        trip_number: tripNo.trim() || null,
         from_location: from.trim(),
         to_location: to.trim(),
         miles: milesNum,
         hours: hourly ? hoursNum : null,
-        fuel_litres: fuelLitres ? parseFloat(fuelLitres) : null,
-        fuel_cost_cad: fuelCost ? parseFloat(fuelCost) : null,
         truck_id: truckId || null,
       });
       if (error) throw error;
@@ -177,6 +175,16 @@ export default function OwnerAddTripPage() {
             />
           </div>
           <div className="field">
+            <label htmlFor="onum">{t("tripNumber")}</label>
+            <input
+              id="onum"
+              type="text"
+              placeholder={t("tripNumberPh")}
+              value={tripNo}
+              onChange={(e) => setTripNo(e.target.value)}
+            />
+          </div>
+          <div className="field">
             <label htmlFor="ofrom">{t("from")}</label>
             <input
               id="ofrom"
@@ -228,30 +236,6 @@ export default function OwnerAddTripPage() {
               />
             </div>
           )}
-          <div className="field">
-            <label htmlFor="ofuel">{t("fuelLitres")}</label>
-            <input
-              id="ofuel"
-              type="number"
-              min="0"
-              step="0.1"
-              inputMode="decimal"
-              value={fuelLitres}
-              onChange={(e) => setFuelLitres(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="ofuelcost">{t("fuelCost")}</label>
-            <input
-              id="ofuelcost"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              value={fuelCost}
-              onChange={(e) => setFuelCost(e.target.value)}
-            />
-          </div>
           {trucks.length > 0 && (
             <div className="field">
               <label htmlFor="otruck">{t("truck")}</label>
