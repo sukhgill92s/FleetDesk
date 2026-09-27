@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
-import RoleGuard from "@/components/RoleGuard";
 import { useLang } from "@/lib/i18n";
 
 export default function DriverLayout({
@@ -23,7 +22,7 @@ export default function DriverLayout({
   return (
     <main className="container">
       <Header homeHref="/driver" />
-      <RoleGuard expect="driver">{children}</RoleGuard>
+      {children}
       <nav className="bottom-nav">
         {tabs.map((tab) => {
           const active = tab.exact
