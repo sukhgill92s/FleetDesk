@@ -1,37 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { useLang } from "@/lib/i18n";
-import { toISODate } from "@/lib/week";
+import type { PayPeriod } from "@/lib/pay";
 
-interface Truck {
-  id: string;
-  unit_number: string;
-}
+const OPTIONS: { value: PayPeriod; labelKey: "payPeriodWeekly" | "payPeriodBiweekly" | "payPeriodMonthly"; desc: string }[] = [
+  { value: "weekly", labelKey: "payPeriodWeekly", desc: "Mon – Sun" },
+  { value: "biweekly", labelKey: "payPeriodBiweekly", desc: "14 days" },
+  { value: "monthly", labelKey: "payPeriodMonthly", desc: "1st – month end" },
+];
 
-export default function NewTripPage() {
+export default function SettingsPage() {
   const { t } = useLang();
-  const router = useRouter();
-
-  const [driverId, setDriverId] = useState<string | null>(null);
-  const [ownerId, setOwnerId] = useState<string | null>(null);
-  const [trucks, setTrucks] = useState<Truck[]>([]);
+  const [period, setPeriod] = useState<PayPeriod>("weekly");
   const [ready, setReady] = useState(false);
-
-  const [date, setDate] = useState(toISODate(new Date()));
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [miles, setMiles] = useState("");
-  const [fuelLitres, setFuelLitres] = useState("");
-  const [fuelCost, setFuelCost] = useState("");
-  const [truckId, setTruckId] = useState("");
-
-  const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -41,60 +27,37 @@ export default function NewTripPage() {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) return;
-
-        const { data: dRow, error: dErr } = await supabase
-          .from("drivers")
-          .select("id,owner_id")
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("pay_period")
           .eq("user_id", user.id)
           .maybeSingle();
-        if (dErr) throw dErr;
-        if (!dRow) {
-          router.push("/driver");
-          return;
-        }
-        setDriverId(dRow.id);
-        setOwnerId(dRow.owner_id);
-
-        const { data: trks } = await supabase
-          .from("trucks")
-          .select("id,unit_number")
-          .eq("owner_id", dRow.owner_id)
-          .order("unit_number");
-        // RLS lets drivers read (not change) their company's trucks.
-        setTrucks(trks ?? []);
+        if (error) throw error;
+        if (data?.pay_period) setPeriod(data.pay_period as PayPeriod);
       } catch (e) {
         setError(e instanceof Error ? e.message : t("errorGeneric"));
       } finally {
         setReady(true);
       }
     })();
-  }, [router, t]);
+  }, [t]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSave() {
     setError("");
-    const milesNum = parseFloat(miles);
-    if (!driverId || !ownerId || !date || !from.trim() || !to.trim() || isNaN(milesNum) || milesNum <= 0) {
-      setError(t("errorGeneric"));
-      return;
-    }
+    setSaved(false);
     setSaving(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.from("trips").insert({
-        owner_id: ownerId,
-        driver_id: driverId,
-        trip_date: date,
-        from_location: from.trim(),
-        to_location: to.trim(),
-        miles: milesNum,
-        fuel_litres: fuelLitres ? parseFloat(fuelLitres) : null,
-        fuel_cost_cad: fuelCost ? parseFloat(fuelCost) : null,
-        truck_id: truckId || null,
-      });
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error(t("errorGeneric"));
+      const { error } = await supabase
+        .from("profiles")
+        .update({ pay_period: period })
+        .eq("user_id", user.id);
       if (error) throw error;
       setSaved(true);
-      setTimeout(() => router.push("/driver"), 1200);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
@@ -112,110 +75,33 @@ export default function NewTripPage() {
 
   return (
     <div className="card">
-      <h1>{t("newTrip")}</h1>
-      {saved ? (
-        <div className="success-box">{t("tripSaved")}</div>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          {error && <div className="error-box">{error}</div>}
-          <div className="field">
-            <label htmlFor="tdate">{t("date")}</label>
-            <input
-              id="tdate"
-              type="date"
-              required
-              value={date}
-              max={toISODate(new Date())}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="tfrom">{t("from")}</label>
-            <input
-              id="tfrom"
-              type="text"
-              required
-              placeholder={t("fromPh")}
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="tto">{t("to")}</label>
-            <input
-              id="tto"
-              type="text"
-              required
-              placeholder={t("toPh")}
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="tmiles">{t("miles")}</label>
-            <input
-              id="tmiles"
-              type="number"
-              required
-              min="0"
-              step="0.1"
-              inputMode="decimal"
-              placeholder={t("milesPh")}
-              value={miles}
-              onChange={(e) => setMiles(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="tfuel">{t("fuelLitres")}</label>
-            <input
-              id="tfuel"
-              type="number"
-              min="0"
-              step="0.1"
-              inputMode="decimal"
-              value={fuelLitres}
-              onChange={(e) => setFuelLitres(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="tfuelcost">{t("fuelCost")}</label>
-            <input
-              id="tfuelcost"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              value={fuelCost}
-              onChange={(e) => setFuelCost(e.target.value)}
-            />
-          </div>
-          {trucks.length > 0 && (
-            <div className="field">
-              <label htmlFor="ttruck">{t("truck")}</label>
-              <select
-                id="ttruck"
-                value={truckId}
-                onChange={(e) => setTruckId(e.target.value)}
-              >
-                <option value="">{t("noTruck")}</option>
-                {trucks.map((tr) => (
-                  <option key={tr.id} value={tr.id}>
-                    {tr.unit_number}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="btn-row">
-            <Link href="/driver" className="btn btn-ghost">
-              {t("cancel")}
-            </Link>
-            <button type="submit" className="btn" disabled={saving}>
-              {saving ? t("saving") : t("saveTrip")}
+      <h1>{t("settingsTitle")}</h1>
+      {error && <div className="error-box">{error}</div>}
+      {saved && <div className="success-box">{t("settingsSaved")}</div>}
+
+      <div className="field">
+        <label>{t("payPeriod")}</label>
+        <div className="role-cards">
+          {OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              className={`role-card ${period === o.value ? "selected" : ""}`}
+              onClick={() => {
+                setPeriod(o.value);
+                setSaved(false);
+              }}
+            >
+              <div className="title">{t(o.labelKey)}</div>
+              <div className="desc">{o.desc}</div>
             </button>
-          </div>
-        </form>
-      )}
+          ))}
+        </div>
+      </div>
+
+      <button type="button" className="btn" onClick={handleSave} disabled={saving}>
+        {saving ? t("saving") : t("save")}
+      </button>
     </div>
   );
 }
