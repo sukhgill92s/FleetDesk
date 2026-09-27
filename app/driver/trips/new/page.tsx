@@ -1,23 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { useLang } from "@/lib/i18n";
-import type { PayPeriod } from "@/lib/pay";
+import { toISODate } from "@/lib/week";
 
-const OPTIONS: { value: PayPeriod; labelKey: "payPeriodWeekly" | "payPeriodBiweekly" | "payPeriodMonthly"; desc: string }[] = [
-  { value: "weekly", labelKey: "payPeriodWeekly", desc: "Mon – Sun" },
-  { value: "biweekly", labelKey: "payPeriodBiweekly", desc: "14 days" },
-  { value: "monthly", labelKey: "payPeriodMonthly", desc: "1st – month end" },
-];
+interface Truck {
+  id: string;
+  unit_number: string;
+}
 
-export default function SettingsPage() {
+export default function NewTripPage() {
   const { t } = useLang();
-  const [period, setPeriod] = useState<PayPeriod>("weekly");
+  const router = useRouter();
+
+  const [driverId, setDriverId] = useState<string | null>(null);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [payType, setPayType] = useState<string>("per_mile");
+  const [trucks, setTrucks] = useState<Truck[]>([]);
   const [ready, setReady] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+
+  const [date, setDate] = useState(toISODate(new Date()));
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [miles, setMiles] = useState("");
+  const [hours, setHours] = useState("");
+  const [fuelLitres, setFuelLitres] = useState("");
+  const [fuelCost, setFuelCost] = useState("");
+  const [truckId, setTruckId] = useState("");
+
   const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -27,37 +43,73 @@ export default function SettingsPage() {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) return;
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("pay_period")
+
+        const { data: dRow, error: dErr } = await supabase
+          .from("drivers")
+          .select("id,owner_id,pay_type")
           .eq("user_id", user.id)
           .maybeSingle();
-        if (error) throw error;
-        if (data?.pay_period) setPeriod(data.pay_period as PayPeriod);
+        if (dErr) throw dErr;
+        if (!dRow) {
+          router.push("/driver");
+          return;
+        }
+        setDriverId(dRow.id);
+        setOwnerId(dRow.owner_id);
+        setPayType(dRow.pay_type ?? "per_mile");
+
+        const { data: trks } = await supabase
+          .from("trucks")
+          .select("id,unit_number")
+          .eq("owner_id", dRow.owner_id)
+          .order("unit_number");
+        // RLS lets drivers read (not change) their company's trucks.
+        setTrucks(trks ?? []);
       } catch (e) {
         setError(e instanceof Error ? e.message : t("errorGeneric"));
       } finally {
         setReady(true);
       }
     })();
-  }, [t]);
+  }, [router, t]);
 
-  async function handleSave() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setError("");
-    setSaved(false);
+    const milesNum = parseFloat(miles);
+    const hoursNum = parseFloat(hours);
+    const hourly = payType === "hourly";
+    if (
+      !driverId ||
+      !ownerId ||
+      !date ||
+      !from.trim() ||
+      !to.trim() ||
+      isNaN(milesNum) ||
+      milesNum <= 0 ||
+      (hourly && (isNaN(hoursNum) || hoursNum <= 0))
+    ) {
+      setError(t("errorGeneric"));
+      return;
+    }
     setSaving(true);
     try {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error(t("errorGeneric"));
-      const { error } = await supabase
-        .from("profiles")
-        .update({ pay_period: period })
-        .eq("user_id", user.id);
+      const { error } = await supabase.from("trips").insert({
+        owner_id: ownerId,
+        driver_id: driverId,
+        trip_date: date,
+        from_location: from.trim(),
+        to_location: to.trim(),
+        miles: milesNum,
+        hours: payType === "hourly" ? parseFloat(hours) : null,
+        fuel_litres: fuelLitres ? parseFloat(fuelLitres) : null,
+        fuel_cost_cad: fuelCost ? parseFloat(fuelCost) : null,
+        truck_id: truckId || null,
+      });
       if (error) throw error;
       setSaved(true);
+      setTimeout(() => router.push("/driver"), 1200);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
@@ -75,33 +127,126 @@ export default function SettingsPage() {
 
   return (
     <div className="card">
-      <h1>{t("settingsTitle")}</h1>
-      {error && <div className="error-box">{error}</div>}
-      {saved && <div className="success-box">{t("settingsSaved")}</div>}
-
-      <div className="field">
-        <label>{t("payPeriod")}</label>
-        <div className="role-cards">
-          {OPTIONS.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              className={`role-card ${period === o.value ? "selected" : ""}`}
-              onClick={() => {
-                setPeriod(o.value);
-                setSaved(false);
-              }}
-            >
-              <div className="title">{t(o.labelKey)}</div>
-              <div className="desc">{o.desc}</div>
+      <h1>{t("newTrip")}</h1>
+      {saved ? (
+        <div className="success-box">{t("tripSaved")}</div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          {error && <div className="error-box">{error}</div>}
+          <div className="field">
+            <label htmlFor="tdate">{t("date")}</label>
+            <input
+              id="tdate"
+              type="date"
+              required
+              value={date}
+              max={toISODate(new Date())}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="tfrom">{t("from")}</label>
+            <input
+              id="tfrom"
+              type="text"
+              required
+              placeholder={t("fromPh")}
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="tto">{t("to")}</label>
+            <input
+              id="tto"
+              type="text"
+              required
+              placeholder={t("toPh")}
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="tmiles">{t("miles")}</label>
+            <input
+              id="tmiles"
+              type="number"
+              required
+              min="0"
+              step="0.1"
+              inputMode="decimal"
+              placeholder={t("milesPh")}
+              value={miles}
+              onChange={(e) => setMiles(e.target.value)}
+            />
+          </div>
+          {payType === "hourly" && (
+            <div className="field">
+              <label htmlFor="thours">⏰ {t("hours")}</label>
+              <input
+                id="thours"
+                type="number"
+                required
+                min="0"
+                step="0.1"
+                inputMode="decimal"
+                placeholder={t("hoursPh")}
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+              />
+            </div>
+          )}
+          <div className="field">
+            <label htmlFor="tfuel">{t("fuelLitres")}</label>
+            <input
+              id="tfuel"
+              type="number"
+              min="0"
+              step="0.1"
+              inputMode="decimal"
+              value={fuelLitres}
+              onChange={(e) => setFuelLitres(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="tfuelcost">{t("fuelCost")}</label>
+            <input
+              id="tfuelcost"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={fuelCost}
+              onChange={(e) => setFuelCost(e.target.value)}
+            />
+          </div>
+          {trucks.length > 0 && (
+            <div className="field">
+              <label htmlFor="ttruck">{t("truck")}</label>
+              <select
+                id="ttruck"
+                value={truckId}
+                onChange={(e) => setTruckId(e.target.value)}
+              >
+                <option value="">{t("noTruck")}</option>
+                {trucks.map((tr) => (
+                  <option key={tr.id} value={tr.id}>
+                    {tr.unit_number}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="btn-row">
+            <Link href="/driver" className="btn btn-ghost">
+              {t("cancel")}
+            </Link>
+            <button type="submit" className="btn" disabled={saving}>
+              {saving ? t("saving") : t("saveTrip")}
             </button>
-          ))}
-        </div>
-      </div>
-
-      <button type="button" className="btn" onClick={handleSave} disabled={saving}>
-        {saving ? t("saving") : t("save")}
-      </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
