@@ -151,6 +151,9 @@ const en = {
   // Trip form
   newTrip: "Log a trip",
   date: "Date",
+  tripNumber: "Trip no.",
+  tripNumberPh: "e.g. 4821",
+  tripDetails: "Trip details",
   fromPh: "e.g. Brampton, ON",
   toPh: "e.g. Chicago, IL",
   milesPh: "e.g. 520",
@@ -317,6 +320,9 @@ const pa: Record<StringKey, string> = {
 
   newTrip: "Trip pao",
   date: "Tareekh",
+  tripNumber: "Trip number",
+  tripNumberPh: "jivein 4821",
+  tripDetails: "Trip di detail",
   fromPh: "jivein Brampton, ON",
   toPh: "jivein Chicago, IL",
   milesPh: "jivein 520",
