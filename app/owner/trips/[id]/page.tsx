@@ -17,6 +17,7 @@ interface TripDetail {
   hours: number | null;
   fuel_litres: number | null;
   fuel_cost_cad: number | null;
+  status: string;
   trucks: { unit_number: string } | null;
   drivers: { name: string } | null;
 }
@@ -44,7 +45,7 @@ export default function OwnerTripDetailPage() {
         const { data, error } = await supabase
           .from("trips")
           .select(
-            "id,trip_date,trip_number,from_location,to_location,miles,hours,fuel_litres,fuel_cost_cad,trucks(unit_number),drivers(name)"
+            "id,trip_date,trip_number,from_location,to_location,miles,hours,fuel_litres,fuel_cost_cad,status,trucks(unit_number),drivers(name)"
           )
           .eq("id", id)
           .eq("owner_id", user.id)
@@ -81,6 +82,9 @@ export default function OwnerTripDetailPage() {
 
   const rows: [string, string][] = [
     ...(trip.drivers ? [[t("driver"), trip.drivers.name] as [string, string]] : []),
+    ...(trip.status === "pending"
+      ? [["Status", `⏳ ${t("pending")}`] as [string, string]]
+      : []),
     ...(trip.trip_number ? [[t("tripNumber"), trip.trip_number] as [string, string]] : []),
     [t("date"), prettyDate(trip.trip_date)],
     [t("from"), trip.from_location],
