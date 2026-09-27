@@ -25,7 +25,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -33,6 +33,11 @@ export default function SignupPage() {
         },
       });
       if (error) throw error;
+      if (data.session) {
+        // Email confirmation is disabled — user is signed in immediately.
+        window.location.href = "/";
+        return;
+      }
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
