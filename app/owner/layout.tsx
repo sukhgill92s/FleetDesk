@@ -16,6 +16,7 @@ export default function OwnerLayout({
   const tabs = [
     { href: "/owner", label: `📊 ${t("navDashboard")}`, exact: true },
     { href: "/owner/drivers", label: `🧑‍✈️ ${t("navDrivers")}`, exact: false },
+    { href: "/owner/trips/new", label: `➕ ${t("addTrip")}`, exact: false },
     { href: "/owner/trucks", label: `🚛 ${t("navTrucks")}`, exact: false },
     { href: "/owner/settings", label: `⚙️ ${t("navSettings")}`, exact: false },
   ];
