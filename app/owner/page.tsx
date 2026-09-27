@@ -1,268 +1,252 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { useLang } from "@/lib/i18n";
-import { weekRange, toISODate, cad, prettyDate } from "@/lib/week";
+import { toISODate } from "@/lib/week";
 
-interface Driver {
+interface Truck {
   id: string;
-  name: string;
-  phone: string | null;
-  per_mile_rate_cad: number;
+  unit_number: string;
 }
 
-interface Trip {
-  id: string;
-  driver_id: string;
-  trip_date: string;
-  miles: number;
-}
-
-interface Expense {
-  id: string;
-  driver_id: string;
-  expense_date: string;
-  category: string;
-  amount_cad: number;
-  receipt_path: string | null;
-}
-
-export default function OwnerDashboard() {
+export default function NewTripPage() {
   const { t } = useLang();
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const [driverId, setDriverId] = useState<string | null>(null);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [payType, setPayType] = useState<string>("per_mile");
+  const [trucks, setTrucks] = useState<Truck[]>([]);
+  const [ready, setReady] = useState(false);
+
+  const [date, setDate] = useState(toISODate(new Date()));
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [miles, setMiles] = useState("");
+  const [hours, setHours] = useState("");
+  const [fuelLitres, setFuelLitres] = useState("");
+  const [fuelCost, setFuelCost] = useState("");
+  const [truckId, setTruckId] = useState("");
+
   const [error, setError] = useState("");
-  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
-  const [receiptLoading, setReceiptLoading] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const range = weekRange(weekOffset);
-  const startISO = toISODate(range.start);
-  const endISO = toISODate(range.end);
+  useEffect(() => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
 
-  const load = useCallback(async () => {
-    setLoading(true);
+        const { data: dRow, error: dErr } = await supabase
+          .from("drivers")
+          .select("id,owner_id,pay_type")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (dErr) throw dErr;
+        if (!dRow) {
+          router.push("/driver");
+          return;
+        }
+        setDriverId(dRow.id);
+        setOwnerId(dRow.owner_id);
+        setPayType(dRow.pay_type ?? "per_mile");
+
+        const { data: trks } = await supabase
+          .from("trucks")
+          .select("id,unit_number")
+          .eq("owner_id", dRow.owner_id)
+          .order("unit_number");
+        // RLS lets drivers read (not change) their company's trucks.
+        setTrucks(trks ?? []);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : t("errorGeneric"));
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, [router, t]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setError("");
+    const milesNum = parseFloat(miles);
+    const hoursNum = parseFloat(hours);
+    const hourly = payType === "hourly";
+    if (
+      !driverId ||
+      !ownerId ||
+      !date ||
+      !from.trim() ||
+      !to.trim() ||
+      isNaN(milesNum) ||
+      milesNum <= 0 ||
+      (hourly && (isNaN(hoursNum) || hoursNum <= 0))
+    ) {
+      setError(t("errorGeneric"));
+      return;
+    }
+    setSaving(true);
     try {
       const supabase = createClient();
-      const [dRes, tRes, eRes] = await Promise.all([
-        supabase.from("drivers").select("id,name,phone,per_mile_rate_cad").order("name"),
-        supabase
-          .from("trips")
-          .select("id,driver_id,trip_date,miles")
-          .gte("trip_date", startISO)
-          .lte("trip_date", endISO),
-        supabase
-          .from("expenses")
-          .select("id,driver_id,expense_date,category,amount_cad,receipt_path")
-          .gte("expense_date", startISO)
-          .lte("expense_date", endISO)
-          .order("expense_date", { ascending: false }),
-      ]);
-      if (dRes.error) throw dRes.error;
-      if (tRes.error) throw tRes.error;
-      if (eRes.error) throw eRes.error;
-      setDrivers(dRes.data ?? []);
-      setTrips(tRes.data ?? []);
-      setExpenses(eRes.data ?? []);
+      const { error } = await supabase.from("trips").insert({
+        owner_id: ownerId,
+        driver_id: driverId,
+        trip_date: date,
+        from_location: from.trim(),
+        to_location: to.trim(),
+        miles: milesNum,
+        hours: payType === "hourly" ? parseFloat(hours) : null,
+        fuel_litres: fuelLitres ? parseFloat(fuelLitres) : null,
+        fuel_cost_cad: fuelCost ? parseFloat(fuelCost) : null,
+        truck_id: truckId || null,
+      });
+      if (error) throw error;
+      setSaved(true);
+      setTimeout(() => router.push("/driver"), 1200);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
-      setLoading(false);
-    }
-  }, [startISO, endISO, t]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  async function openReceipt(path: string, id: string) {
-    setReceiptLoading(id);
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.storage
-        .from("receipts")
-        .createSignedUrl(path, 300);
-      if (error) throw error;
-      setReceiptUrl(data.signedUrl);
-    } catch {
-      setError(t("errorGeneric"));
-    } finally {
-      setReceiptLoading(null);
+      setSaving(false);
     }
   }
 
-  const summary = drivers.map((d) => {
-    const dTrips = trips.filter((x) => x.driver_id === d.id);
-    const dExp = expenses.filter((x) => x.driver_id === d.id);
-    const miles = dTrips.reduce((s, x) => s + Number(x.miles), 0);
-    const expTotal = dExp.reduce((s, x) => s + Number(x.amount_cad), 0);
-    return {
-      driver: d,
-      tripCount: dTrips.length,
-      miles,
-      pay: miles * Number(d.per_mile_rate_cad),
-      expTotal,
-    };
-  });
-
-  const totMiles = summary.reduce((s, x) => s + x.miles, 0);
-  const totPay = summary.reduce((s, x) => s + x.pay, 0);
-  const totExp = summary.reduce((s, x) => s + x.expTotal, 0);
+  if (!ready) {
+    return (
+      <div className="card">
+        <p className="muted">{t("loading")}</p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="card">
-        <h1>{t("dashboardTitle")}</h1>
-        <div className="week-nav">
-          <button
-            type="button"
-            className="btn-ghost btn"
-            onClick={() => setWeekOffset((o) => o - 1)}
-          >
-            {t("prevWeek")}
-          </button>
-          <span className="week-label">{range.label}</span>
-          <button
-            type="button"
-            className="btn-ghost btn"
-            onClick={() => setWeekOffset((o) => o + 1)}
-            disabled={weekOffset >= 0}
-          >
-            {t("nextWeek")}
-          </button>
-        </div>
-
-        {loading ? (
-          <p className="muted">{t("loading")}</p>
-        ) : error ? (
-          <div className="error-box">
-            {error}{" "}
-            <button type="button" className="link" onClick={load}>
-              {t("retry")}
-            </button>
+    <div className="card">
+      <h1>{t("newTrip")}</h1>
+      {saved ? (
+        <div className="success-box">{t("tripSaved")}</div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          {error && <div className="error-box">{error}</div>}
+          <div className="field">
+            <label htmlFor="tdate">{t("date")}</label>
+            <input
+              id="tdate"
+              type="date"
+              required
+              value={date}
+              max={toISODate(new Date())}
+              onChange={(e) => setDate(e.target.value)}
+            />
           </div>
-        ) : drivers.length === 0 ? (
-          <p className="muted">{t("noDrivers")}</p>
-        ) : (
-          <div className="table-wrap">
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>{t("driver")}</th>
-                  <th className="num">{t("miles")}</th>
-                  <th className="num">
-                    {t("payOwed")} ({t("rate")})
-                  </th>
-                  <th className="num">{t("expenses")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.map((s) => (
-                  <tr key={s.driver.id}>
-                    <td>
-                      <strong>{s.driver.name}</strong>
-                      <div className="muted" style={{ fontSize: 13 }}>
-                        {s.tripCount} {t("tripsCount")} ·{" "}
-                        {cad(Number(s.driver.per_mile_rate_cad))}/mi
-                      </div>
-                    </td>
-                    <td className="num">{s.miles.toLocaleString()}</td>
-                    <td className="num">{cad(s.pay)}</td>
-                    <td className="num">{cad(s.expTotal)}</td>
-                  </tr>
+          <div className="field">
+            <label htmlFor="tfrom">{t("from")}</label>
+            <input
+              id="tfrom"
+              type="text"
+              required
+              placeholder={t("fromPh")}
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="tto">{t("to")}</label>
+            <input
+              id="tto"
+              type="text"
+              required
+              placeholder={t("toPh")}
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="tmiles">{t("miles")}</label>
+            <input
+              id="tmiles"
+              type="number"
+              required
+              min="0"
+              step="0.1"
+              inputMode="decimal"
+              placeholder={t("milesPh")}
+              value={miles}
+              onChange={(e) => setMiles(e.target.value)}
+            />
+          </div>
+          {payType === "hourly" && (
+            <div className="field">
+              <label htmlFor="thours">⏰ {t("hours")}</label>
+              <input
+                id="thours"
+                type="number"
+                required
+                min="0"
+                step="0.1"
+                inputMode="decimal"
+                placeholder={t("hoursPh")}
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+              />
+            </div>
+          )}
+          <div className="field">
+            <label htmlFor="tfuel">{t("fuelLitres")}</label>
+            <input
+              id="tfuel"
+              type="number"
+              min="0"
+              step="0.1"
+              inputMode="decimal"
+              value={fuelLitres}
+              onChange={(e) => setFuelLitres(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="tfuelcost">{t("fuelCost")}</label>
+            <input
+              id="tfuelcost"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={fuelCost}
+              onChange={(e) => setFuelCost(e.target.value)}
+            />
+          </div>
+          {trucks.length > 0 && (
+            <div className="field">
+              <label htmlFor="ttruck">{t("truck")}</label>
+              <select
+                id="ttruck"
+                value={truckId}
+                onChange={(e) => setTruckId(e.target.value)}
+              >
+                <option value="">{t("noTruck")}</option>
+                {trucks.map((tr) => (
+                  <option key={tr.id} value={tr.id}>
+                    {tr.unit_number}
+                  </option>
                 ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td>{t("total")}</td>
-                  <td className="num">{totMiles.toLocaleString()}</td>
-                  <td className="num">{cad(totPay)}</td>
-                  <td className="num">{cad(totExp)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
-
-        <div className="btn-row" style={{ marginTop: 16 }}>
-          <Link href="/owner/drivers" className="btn btn-secondary">
-            {t("manageDrivers")}
-          </Link>
-          <Link href="/owner/trucks" className="btn btn-secondary">
-            {t("manageTrucks")}
-          </Link>
-        </div>
-      </div>
-
-      {expenses.length > 0 && (
-        <div className="card">
-          <h2>
-            {t("expenses")} · {range.label}
-          </h2>
-          {expenses.map((e) => {
-            const d = drivers.find((x) => x.id === e.driver_id);
-            return (
-              <div key={e.id} className="list-item">
-                <div className="row">
-                  <strong>{d?.name ?? "—"}</strong>
-                  <strong>{cad(Number(e.amount_cad))}</strong>
-                </div>
-                <div className="sub">
-                  {prettyDate(e.expense_date)} · {e.category}
-                  {e.receipt_path && (
-                    <>
-                      {" · "}
-                      <button
-                        type="button"
-                        className="link"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          padding: 0,
-                          cursor: "pointer",
-                          fontSize: 13,
-                        }}
-                        onClick={() => openReceipt(e.receipt_path!, e.id)}
-                        disabled={receiptLoading === e.id}
-                      >
-                        {receiptLoading === e.id
-                          ? t("loading")
-                          : `🧾 ${t("viewReceipt")}`}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}X
-
-      {receiptUrl && (
-        <div className="card">
-          <h2>🧾 {t("viewReceipt")}</h2>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={receiptUrl}
-            alt="Receipt"
-            style={{ width: "100%", borderRadius: 8 }}
-          />
-          <div style={{ marginTop: 12 }}>
-            <button
-              type="button"
-              className="btn-ghost btn"
-              onClick={() => setReceiptUrl(null)}
-            >
+              </select>
+            </div>
+          )}
+          <div className="btn-row">
+            <Link href="/driver" className="btn btn-ghost">
               {t("cancel")}
+            </Link>
+            <button type="submit" className="btn" disabled={saving}>
+              {saving ? t("saving") : t("saveTrip")}
             </button>
           </div>
-        </div>
+        </form>
       )}
-    </>
+    </div>
   );
 }

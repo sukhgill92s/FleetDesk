@@ -17,6 +17,7 @@ export default function OwnerLayout({
     { href: "/owner", label: `📊 ${t("navDashboard")}`, exact: true },
     { href: "/owner/drivers", label: `🧑‍✈️ ${t("navDrivers")}`, exact: false },
     { href: "/owner/trucks", label: `🚛 ${t("navTrucks")}`, exact: false },
+    { href: "/owner/settings", label: `⚙️ ${t("navSettings")}`, exact: false },
   ];
 
   return (
