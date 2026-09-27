@@ -59,6 +59,34 @@ export async function middleware(request: NextRequest) {
   // Let /auth/* (callback, signout) through untouched.
   if (isAuthRoute) return supabaseResponse;
 
+  // Role guard: owners belong on /owner/*, drivers on /driver/*.
+  // Server-side redirect, so a wrong-role visit settles in one hop
+  // and can never ping-pong like a client-side check could.
+  if (user) {
+    const wantsOwner = pathname.startsWith("/owner");
+    const wantsDriver = pathname.startsWith("/driver");
+    if (wantsOwner || wantsDriver) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const url = request.nextUrl.clone();
+      if (!profile) {
+        url.pathname = "/onboarding";
+        return NextResponse.redirect(url);
+      }
+      if (wantsOwner && profile.role !== "owner") {
+        url.pathname = "/driver";
+        return NextResponse.redirect(url);
+      }
+      if (wantsDriver && profile.role !== "driver") {
+        url.pathname = "/owner";
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   return supabaseResponse;
 }
 
