@@ -31,6 +31,8 @@ export default function DriversPage() {
   const [payType, setPayType] = useState<PayType>("per_mile");
   const [rate, setRate] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
+  const [notice, setNotice] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,12 +91,36 @@ export default function DriversPage() {
       });
       if (error) throw error;
 
+      // Auto-invite: email the driver so they can set a password and join.
+      const emailVal = loginEmail.trim().toLowerCase();
+      let inviteMsg = "";
+      if (emailVal) {
+        try {
+          const res = await fetch("/api/drivers/invite", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: emailVal, name: name.trim() }),
+          });
+          const body = await res.json();
+          if (body.invited) {
+            inviteMsg = `${t("inviteSentTo")} ${emailVal}`;
+          } else if (body.reason === "already_signed_up") {
+            inviteMsg = t("inviteAlreadySignedUp");
+          } else {
+            inviteMsg = t("inviteFailed");
+          }
+        } catch {
+          inviteMsg = t("inviteFailed");
+        }
+      }
+
       setName("");
       setPhone("");
       setLoginEmail("");
       setRate("");
       setHourlyRate("");
       setPayType("per_mile");
+      setNotice(inviteMsg);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
@@ -109,10 +135,28 @@ export default function DriversPage() {
       : `${cad(Number(d.per_mile_rate_cad))}/mi`;
   }
 
+  async function handleDelete(d: Driver) {
+    if (!window.confirm(`${d.name} — ${t("deleteDriverConfirm")}`)) return;
+    setDeletingId(d.id);
+    setError("");
+    setNotice("");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from("drivers").delete().eq("id", d.id);
+      if (error) throw error;
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <>
       <div className="card">
         <h1>{t("driversTitle")}</h1>
+        {notice && <div className="success-box">{notice}</div>}
         {loading ? (
           <p className="muted">{t("loading")}</p>
         ) : drivers.length === 0 ? (
@@ -132,6 +176,17 @@ export default function DriversPage() {
                     <span className="badge">not signed up</span>
                   </>
                 )}
+              </div>
+              <div className="row" style={{ marginTop: 8 }}>
+                <span />
+                <button
+                  type="button"
+                  className="btn-danger"
+                  disabled={deletingId === d.id}
+                  onClick={() => handleDelete(d)}
+                >
+                  {deletingId === d.id ? t("deleting") : `🗑️ ${t("deleteDriver")}`}
+                </button>
               </div>
             </div>
           ))
