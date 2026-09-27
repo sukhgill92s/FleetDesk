@@ -33,6 +33,13 @@ export default function DriversPage() {
   const [hourlyRate, setHourlyRate] = useState("");
   const [notice, setNotice] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editPayType, setEditPayType] = useState<PayType>("per_mile");
+  const [editRate, setEditRate] = useState("");
+  const [editHourlyRate, setEditHourlyRate] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -152,6 +159,56 @@ export default function DriversPage() {
     }
   }
 
+  function startEdit(d: Driver) {
+    setEditingId(d.id);
+    setEditName(d.name);
+    setEditPhone(d.phone ?? "");
+    setEditPayType(d.pay_type === "hourly" ? "hourly" : "per_mile");
+    setEditRate(String(d.per_mile_rate_cad));
+    setEditHourlyRate(
+      d.hourly_rate_cad != null ? String(d.hourly_rate_cad) : ""
+    );
+    setError("");
+    setNotice("");
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingId) return;
+    const rateNum = parseFloat(editRate);
+    const hourlyNum = parseFloat(editHourlyRate);
+    const valid =
+      editName.trim() &&
+      (editPayType === "per_mile"
+        ? !isNaN(rateNum) && rateNum > 0
+        : !isNaN(hourlyNum) && hourlyNum > 0);
+    if (!valid) {
+      setError(t("errorGeneric"));
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("drivers")
+        .update({
+          name: editName.trim(),
+          phone: editPhone.trim() || null,
+          pay_type: editPayType,
+          per_mile_rate_cad: editPayType === "per_mile" ? rateNum : 0,
+          hourly_rate_cad: editPayType === "hourly" ? hourlyNum : null,
+        })
+        .eq("id", editingId);
+      if (error) throw error;
+      setEditingId(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
   return (
     <>
       <div className="card">
@@ -164,33 +221,127 @@ export default function DriversPage() {
         ) : (
           drivers.map((d) => (
             <div key={d.id} className="list-item">
-              <div className="row">
-                <strong>{d.name}</strong>
-                <span>{rateLabel(d)}</span>
-              </div>
-              <div className="sub">
-                {[d.phone, d.login_email].filter(Boolean).join(" · ")}
-                {!d.user_id && (
-                  <>
-                    {" · "}
-                    <span className="badge">not signed up</span>
-                  </>
-                )}
-              </div>
-              <div className="row" style={{ marginTop: 8 }}>
-                <span />
-                <button
-                  type="button"
-                  className="btn-danger"
-                  disabled={deletingId === d.id}
-                  onClick={() => handleDelete(d)}
-                >
-                  {deletingId === d.id ? t("deleting") : `🗑️ ${t("deleteDriver")}`}
-                </button>
-              </div>
+              {editingId === d.id ? (
+                <form onSubmit={handleEditSave}>
+                  <div className="field">
+                    <label htmlFor={`ename-${d.id}`}>{t("name")}</label>
+                    <input
+                      id={`ename-${d.id}`}
+                      type="text"
+                      required
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor={`ephone-${d.id}`}>{t("phone")}</label>
+                    <input
+                      id={`ephone-${d.id}`}
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>{t("payType")}</label>
+                    <div className="role-cards">
+                      <button
+                        type="button"
+                        className={`role-card ${editPayType === "per_mile" ? "selected" : ""}`}
+                        onClick={() => setEditPayType("per_mile")}
+                      >
+                        <div className="title">🛣️ {t("payPerMile")}</div>
+                      </button>
+                      <button
+                        type="button"
+                        className={`role-card ${editPayType === "hourly" ? "selected" : ""}`}
+                        onClick={() => setEditPayType("hourly")}
+                      >
+                        <div className="title">⏰ {t("payHourly")}</div>
+                      </button>
+                    </div>
+                  </div>
+                  {editPayType === "per_mile" ? (
+                    <div className="field">
+                      <label htmlFor={`erate-${d.id}`}>{t("perMileRate")}</label>
+                      <input
+                        id={`erate-${d.id}`}
+                        type="number"
+                        required
+                        min="0"
+                        step="0.01"
+                        value={editRate}
+                        onChange={(e) => setEditRate(e.target.value)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="field">
+                      <label htmlFor={`ehrate-${d.id}`}>{t("hourlyRate")}</label>
+                      <input
+                        id={`ehrate-${d.id}`}
+                        type="number"
+                        required
+                        min="0"
+                        step="0.01"
+                        value={editHourlyRate}
+                        onChange={(e) => setEditHourlyRate(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  <div className="btn-row">
+                    <button type="submit" className="btn" disabled={editSaving}>
+                      {editSaving ? t("saving") : t("save")}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      disabled={editSaving}
+                      onClick={() => setEditingId(null)}
+                    >
+                      {t("cancel")}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                <div className="row">
+                  <strong>{d.name}</strong>
+                  <span>{rateLabel(d)}</span>
+                </div>
+                <div className="sub">
+                  {[d.phone, d.login_email].filter(Boolean).join(" · ")}
+                  {!d.user_id && (
+                    <>
+                      {" · "}
+                      <span className="badge">not signed up</span>
+                    </>
+                  )}
+                </div>
+                <div className="row" style={{ marginTop: 8 }}>
+                  <span />
+                  <div className="btn-row">
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={() => startEdit(d)}
+                    >
+                      {`✏️ ${t("edit")}`}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      disabled={deletingId === d.id}
+                      onClick={() => handleDelete(d)}
+                    >
+                      {deletingId === d.id ? t("deleting") : `🗑️ ${t("deleteDriver")}`}
+                    </button>
+                  </div>
+                </div>
+                </>
+              )}
             </div>
-          ))
-        )}
+          )))
+        }
       </div>
 
       <div className="card">
