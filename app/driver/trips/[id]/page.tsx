@@ -17,6 +17,7 @@ interface TripDetail {
   hours: number | null;
   fuel_litres: number | null;
   fuel_cost_cad: number | null;
+  status: string;
   trucks: { unit_number: string } | null;
 }
 
@@ -28,6 +29,23 @@ export default function DriverTripDetailPage() {
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [ready, setReady] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+
+  async function handleAccept() {
+    if (!trip) return;
+    setAccepting(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("trips")
+        .update({ status: "accepted" })
+        .eq("id", trip.id);
+      if (error) throw error;
+      setTrip({ ...trip, status: "accepted" });
+    } finally {
+      setAccepting(false);
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -52,7 +70,7 @@ export default function DriverTripDetailPage() {
         const { data, error } = await supabase
           .from("trips")
           .select(
-            "id,trip_date,trip_number,from_location,to_location,miles,hours,fuel_litres,fuel_cost_cad,trucks(unit_number)"
+            "id,trip_date,trip_number,from_location,to_location,miles,hours,fuel_litres,fuel_cost_cad,status,trucks(unit_number)"
           )
           .eq("id", id)
           .eq("driver_id", dRow.id)
@@ -88,6 +106,9 @@ export default function DriverTripDetailPage() {
   }
 
   const rows: [string, string][] = [
+    ...(trip.status === "pending"
+      ? [["Status", `⏳ ${t("pending")}`] as [string, string]]
+      : []),
     ...(trip.trip_number ? [[t("tripNumber"), trip.trip_number] as [string, string]] : []),
     [t("date"), prettyDate(trip.trip_date)],
     [t("from"), trip.from_location],
@@ -118,6 +139,16 @@ export default function DriverTripDetailPage() {
         <Link href="/driver" className="btn btn-ghost">
           {t("myWeek")}
         </Link>
+        {trip.status === "pending" && (
+          <button
+            type="button"
+            className="btn"
+            disabled={accepting}
+            onClick={handleAccept}
+          >
+            ✓ {t("accept")}
+          </button>
+        )}
       </div>
     </div>
   );
