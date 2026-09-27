@@ -22,6 +22,9 @@ const en = {
   navDashboard: "Dashboard",
   navDrivers: "Drivers",
   navTrucks: "Trucks",
+  addTrip: "Add trip",
+  selectDriver: "Select driver",
+  addDriverFirst: "Add a driver first.",
 
   navSettings: "Settings",
   settingsTitle: "Company settings",
@@ -195,6 +198,9 @@ const pa: Record<StringKey, string> = {
   navDashboard: "Dashboard",
   navDrivers: "Driver",
   navTrucks: "Truck",
+  addTrip: "Trip pao",
+  selectDriver: "Driver chuno",
+  addDriverFirst: "Pehla driver add karo.",
 
   navSettings: "Settings",
   settingsTitle: "Company settings",
