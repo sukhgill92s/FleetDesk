@@ -57,6 +57,18 @@ const en = {
   checkEmail:
     "Account created! Check your email for a confirmation link (check spam too), then sign in.",
 
+  // Invite (driver accepts owner's invite)
+  inviteTitle: "You've been invited!",
+  inviteWelcome: "Welcome to",
+  inviteWelcomeGeneric:
+    "Welcome to FleetDesk! Set a password to activate your driver account.",
+  newPassword: "New password",
+  confirmPassword: "Confirm password",
+  passwordTooShort: "Password must be at least 6 characters.",
+  passwordMismatch: "Passwords do not match.",
+  setPasswordContinue: "Set password & continue",
+  saving: "Saving…",
+
   // Onboarding
   chooseRole: "What best describes you?",
   iAmOwner: "I own a trucking company",
@@ -99,6 +111,12 @@ const en = {
   addDriver: "Add driver",
   adding: "Adding…",
   noDriversYet: "No drivers added yet.",
+  deleteDriver: "Delete",
+  deleting: "Deleting…",
+  deleteDriverConfirm: "Delete this driver? Their trips and expenses will also be removed.",
+  inviteSentTo: "Invite email sent to",
+  inviteAlreadySignedUp: "They already have an account — no invite needed.",
+  inviteFailed: "Driver added, but the invite email could not be sent.",
 
   // Trucks page
   trucksTitle: "Trucks",
@@ -137,7 +155,6 @@ const en = {
   truck: "Truck (optional)",
   noTruck: "No truck",
   saveTrip: "Save trip",
-  saving: "Saving…",
   tripSaved: "Trip saved!",
 
   // Expense form
@@ -210,6 +227,17 @@ const pa: Record<StringKey, string> = {
   checkEmail:
     "Account ban gaya! Email vich confirmation link check karo (spam vi), phir sign in karo.",
 
+  inviteTitle: "Tuhanu invite aaya hai!",
+  inviteWelcome: "Ji aayan nu",
+  inviteWelcomeGeneric:
+    "FleetDesk te ji aayan nu! Apna driver account chalu karan layi password set karo.",
+  newPassword: "Nava password",
+  confirmPassword: "Password dobara likho",
+  passwordTooShort: "Password ghatt to ghatt 6 akhar da hove.",
+  passwordMismatch: "Dove password milda nahi.",
+  setPasswordContinue: "Password set karo te agge vadho",
+  saving: "Save ho reha…",
+
   chooseRole: "Tusi kaun ho?",
   iAmOwner: "Meri apni trucking company hai",
   iAmDriver: "Main driver haan",
@@ -248,6 +276,12 @@ const pa: Record<StringKey, string> = {
   addDriver: "Driver pao",
   adding: "Add ho reha…",
   noDriversYet: "Hale koi driver add nahi hoya.",
+  deleteDriver: "Delete karo",
+  deleting: "Delete ho reha…",
+  deleteDriverConfirm: "Eh driver delete karna? Ohde trips te kharche vi delete ho jange.",
+  inviteSentTo: "Invite email bhej ditti:",
+  inviteAlreadySignedUp: "Ohda account pehla hi hai — invite di lorh nahi.",
+  inviteFailed: "Driver add ho gaya, par invite email nahi bheji gayi.",
 
   trucksTitle: "Truck",
   unitNumber: "Unit number",
@@ -283,7 +317,6 @@ const pa: Record<StringKey, string> = {
   truck: "Truck (optional)",
   noTruck: "Koi truck nahi",
   saveTrip: "Trip save karo",
-  saving: "Save ho reha…",
   tripSaved: "Trip save ho gayi!",
 
   newExpense: "Kharcha pao",
