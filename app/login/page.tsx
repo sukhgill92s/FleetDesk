@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { useLang } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/Header";
+import AuthHero from "@/components/AuthHero";
 
 function LoginForm() {
   const router = useRouter();
@@ -41,48 +42,47 @@ function LoginForm() {
   }
 
   return (
-    <main className="container">
-      <div className="header">
-        <div className="brand">
-          🚛 Fleet <span>Desk</span>
+    <main className="auth-page">
+      <AuthHero />
+      <div className="auth-form-wrap">
+        <div className="auth-topbar">
+          <LanguageToggle />
         </div>
-        <LanguageToggle />
-      </div>
-
-      <div className="card">
-        <h1>{t("welcomeBack")}</h1>
-        <p className="muted">{t("signInSub")}</p>
-        <form onSubmit={handleSubmit}>
-          {error && <div className="error-box">{error}</div>}
-          <div className="field">
-            <label htmlFor="email">{t("email")}</label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+        <div className="card auth-card">
+          <h1>{t("welcomeBack")}</h1>
+          <p className="muted">{t("signInSub")}</p>
+          <form onSubmit={handleSubmit}>
+            {error && <div className="error-box">{error}</div>}
+            <div className="field">
+              <label htmlFor="email">{t("email")}</label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="password">{t("password")}</label>
+              <input
+                id="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <button type="submit" className="btn" disabled={loading}>
+              {loading ? t("signingIn") : t("signIn")}
+            </button>
+          </form>
+          <div className="auth-links">
+            {t("noAccount")}{" "}
+            <Link href="/signup">{t("createOne")}</Link>
           </div>
-          <div className="field">
-            <label htmlFor="password">{t("password")}</label>
-            <input
-              id="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? t("signingIn") : t("signIn")}
-          </button>
-        </form>
-        <div className="auth-links">
-          {t("noAccount")}{" "}
-          <Link href="/signup">{t("createOne")}</Link>
         </div>
       </div>
     </main>
@@ -93,7 +93,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="container">
+        <main className="auth-page">
           <p className="muted">Loading…</p>
         </main>
       }
