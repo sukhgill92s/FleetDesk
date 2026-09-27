@@ -15,6 +15,7 @@ interface DriverRow {
 interface Trip {
   id: string;
   trip_date: string;
+  trip_number: string | null;
   from_location: string;
   to_location: string;
   miles: number;
@@ -84,7 +85,7 @@ export default function DriverHome() {
       const [tRes, eRes] = await Promise.all([
         supabase
           .from("trips")
-          .select("id,trip_date,from_location,to_location,miles")
+          .select("id,trip_date,trip_number,from_location,to_location,miles")
           .eq("driver_id", dRow.id)
           .gte("trip_date", startISO)
           .lte("trip_date", endISO)
@@ -190,15 +191,23 @@ export default function DriverHome() {
           <p className="muted">{t("noTripsYet")}</p>
         ) : (
           trips.map((tr) => (
-            <div key={tr.id} className="list-item">
+            <Link
+              key={tr.id}
+              href={`/driver/trips/${tr.id}`}
+              className="list-item"
+              style={{ display: "block", textDecoration: "none", color: "inherit" }}
+            >
               <div className="row">
                 <strong>
                   {tr.from_location} → {tr.to_location}
                 </strong>
                 <span>{Number(tr.miles).toLocaleString()} mi</span>
               </div>
-              <div className="sub">{prettyDate(tr.trip_date)}</div>
-            </div>
+              <div className="sub">
+                {prettyDate(tr.trip_date)}
+                {tr.trip_number ? ` · ${t("tripNumber")}: ${tr.trip_number}` : ""}
+              </div>
+            </Link>
           ))
         )}
       </div>
