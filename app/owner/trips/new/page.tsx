@@ -104,6 +104,7 @@ export default function OwnerAddTripPage() {
         driver_id: driverId,
         trip_date: date,
         trip_number: tripNo.trim() || null,
+        status: "pending",
         from_location: from.trim(),
         to_location: to.trim(),
         miles: milesNum,
