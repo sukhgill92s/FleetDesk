@@ -19,6 +19,7 @@ interface Trip {
   from_location: string;
   to_location: string;
   miles: number;
+  status: string;
 }
 
 interface Expense {
@@ -85,7 +86,7 @@ export default function DriverHome() {
       const [tRes, eRes] = await Promise.all([
         supabase
           .from("trips")
-          .select("id,trip_date,trip_number,from_location,to_location,miles")
+          .select("id,trip_date,trip_number,from_location,to_location,miles,status")
           .eq("driver_id", dRow.id)
           .gte("trip_date", startISO)
           .lte("trip_date", endISO)
@@ -151,9 +152,28 @@ export default function DriverHome() {
     );
   }
 
-  const miles = trips.reduce((s, x) => s + Number(x.miles), 0);
+  const pendingTrips = trips.filter((x) => x.status === "pending");
+  const acceptedTrips = trips.filter((x) => x.status !== "pending");
+  const miles = acceptedTrips.reduce((s, x) => s + Number(x.miles), 0);
   const pay = miles * Number(driver?.per_mile_rate_cad ?? 0);
   const expTotal = expenses.reduce((s, x) => s + Number(x.amount_cad), 0);
+
+  async function acceptTrip(id: string) {
+    setError("");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("trips")
+        .update({ status: "accepted" })
+        .eq("id", id);
+      if (error) throw error;
+      setTrips((prev) =>
+        prev.map((x) => (x.id === id ? { ...x, status: "accepted" } : x))
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
+    }
+  }
 
   return (
     <>
@@ -185,12 +205,47 @@ export default function DriverHome() {
         </div>
       </div>
 
+      {pendingTrips.length > 0 && (
+        <div className="card">
+          <h2>⏳ {t("pendingApproval")}</h2>
+          {pendingTrips.map((tr) => (
+            <div key={tr.id} className="list-item">
+              <div className="row">
+                <strong>
+                  {tr.from_location} → {tr.to_location}
+                </strong>
+                <span>{Number(tr.miles).toLocaleString()} mi</span>
+              </div>
+              <div className="sub">
+                {prettyDate(tr.trip_date)}
+                {tr.trip_number ? ` · ${t("tripNumber")}: ${tr.trip_number}` : ""}
+              </div>
+              <div className="btn-row" style={{ marginTop: 8 }}>
+                <Link
+                  href={`/driver/trips/${tr.id}`}
+                  className="btn btn-ghost"
+                >
+                  {t("tripDetails")}
+                </Link>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => acceptTrip(tr.id)}
+                >
+                  ✓ {t("accept")}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="card">
         <h2>{t("recentTrips")}</h2>
-        {trips.length === 0 ? (
+        {acceptedTrips.length === 0 ? (
           <p className="muted">{t("noTripsYet")}</p>
         ) : (
-          trips.map((tr) => (
+          acceptedTrips.map((tr) => (
             <Link
               key={tr.id}
               href={`/driver/trips/${tr.id}`}
