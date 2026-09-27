@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
-import RoleGuard from "@/components/RoleGuard";
 import { useLang } from "@/lib/i18n";
 
 export default function OwnerLayout({
@@ -24,7 +23,7 @@ export default function OwnerLayout({
   return (
     <main className="container">
       <Header homeHref="/owner" />
-      <RoleGuard expect="owner">{children}</RoleGuard>
+      {children}
       <nav className="bottom-nav">
         {tabs.map((tab) => {
           const active = tab.exact
