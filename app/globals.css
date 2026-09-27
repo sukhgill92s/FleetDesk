@@ -728,3 +728,28 @@ table.data tfoot td {
     max-width: 480px;
   }
 }
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row .muted {
+  flex-shrink: 0;
+}
+
+.detail-row strong {
+  text-align: right;
+}
