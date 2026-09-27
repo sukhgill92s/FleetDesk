@@ -25,6 +25,7 @@ interface Trip {
   to_location: string;
   miles: number;
   hours: number | null;
+  status: string;
 }
 
 interface Expense {
@@ -75,7 +76,7 @@ export default function OwnerDashboard() {
           .order("name"),
         supabase
           .from("trips")
-          .select("id,driver_id,trip_date,trip_number,from_location,to_location,miles,hours")
+          .select("id,driver_id,trip_date,trip_number,from_location,to_location,miles,hours,status")
           .gte("trip_date", startISO)
           .lte("trip_date", endISO),
         supabase
@@ -121,7 +122,12 @@ export default function OwnerDashboard() {
   }
 
   const summary = drivers.map((d) => {
-    const dTrips = trips.filter((x) => x.driver_id === d.id);
+    const dTrips = trips.filter(
+      (x) => x.driver_id === d.id && x.status !== "pending"
+    );
+    const dPending = trips.filter(
+      (x) => x.driver_id === d.id && x.status === "pending"
+    );
     const dExp = expenses.filter((x) => x.driver_id === d.id);
     const miles = dTrips.reduce((s, x) => s + Number(x.miles), 0);
     const hours = dTrips.reduce((s, x) => s + Number(x.hours ?? 0), 0);
@@ -129,6 +135,7 @@ export default function OwnerDashboard() {
     return {
       driver: d,
       tripCount: dTrips.length,
+      pendingCount: dPending.length,
       miles,
       hours,
       pay: driverPay(
@@ -203,7 +210,13 @@ export default function OwnerDashboard() {
                 {summary.map((s) => {
                   const dTrips = trips
                     .filter((x) => x.driver_id === s.driver.id)
-                    .sort((a, b) => (a.trip_date < b.trip_date ? 1 : -1));
+                    .sort((a, b) => {
+                      if (a.status === "pending" && b.status !== "pending")
+                        return -1;
+                      if (a.status !== "pending" && b.status === "pending")
+                        return 1;
+                      return a.trip_date < b.trip_date ? 1 : -1;
+                    });
                   const isOpen = expandedDriver === s.driver.id;
                   return (
                     <Fragment key={s.driver.id}>
@@ -224,6 +237,8 @@ export default function OwnerDashboard() {
                             {s.tripCount} {t("tripsCount")} · {rateLabel(s.driver)}
                             {s.driver.pay_type === "hourly" &&
                               ` · ${s.hours.toLocaleString()} ${t("hours").toLowerCase()}`}
+                            {s.pendingCount > 0 &&
+                              ` · ⏳ ${s.pendingCount} ${t("pending")}`}
                           </div>
                         </td>
                         <td className="num">{s.miles.toLocaleString()}</td>
@@ -249,6 +264,7 @@ export default function OwnerDashboard() {
                                 >
                                   <div className="row">
                                     <strong>
+                                      {tr.status === "pending" ? "⏳ " : ""}
                                       {tr.from_location} → {tr.to_location}
                                     </strong>
                                     <span>
