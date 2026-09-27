@@ -71,16 +71,15 @@ export async function middleware(request: NextRequest) {
         .select("role")
         .eq("user_id", user.id)
         .maybeSingle();
+      // Only redirect on a definite role mismatch. If the profile read comes
+      // back empty for a moment, leave the user where they are instead of
+      // bouncing them somewhere wrong.
       const url = request.nextUrl.clone();
-      if (!profile) {
-        url.pathname = "/onboarding";
-        return NextResponse.redirect(url);
-      }
-      if (wantsOwner && profile.role !== "owner") {
+      if (profile && wantsOwner && profile.role !== "owner") {
         url.pathname = "/driver";
         return NextResponse.redirect(url);
       }
-      if (wantsDriver && profile.role !== "driver") {
+      if (profile && wantsDriver && profile.role !== "driver") {
         url.pathname = "/owner";
         return NextResponse.redirect(url);
       }
