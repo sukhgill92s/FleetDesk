@@ -99,6 +99,7 @@ export default function NewTripPage() {
         driver_id: driverId,
         trip_date: date,
         trip_number: tripNo.trim() || null,
+        status: "accepted",
         from_location: from.trim(),
         to_location: to.trim(),
         miles: milesNum,
