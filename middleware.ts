@@ -38,8 +38,8 @@ export async function middleware(request: NextRequest) {
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
   const isAuthRoute = pathname.startsWith("/auth/");
+  // "/" is public (landing page for logged-out visitors).
   const isProtected =
-    pathname === "/" ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/owner") ||
     pathname.startsWith("/driver");
