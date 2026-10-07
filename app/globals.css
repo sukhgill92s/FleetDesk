@@ -856,7 +856,8 @@ table.data tfoot td {
   border-radius: 16px;
   padding: 24px;
 }
-.fleet-card-icon { font-size: 30px; margin-bottom: 12px; }
+.fleet-card-icon { font-size: 30px; margin-bottom: 12px; color: #60a5fa; }
+.fleet-card-icon svg { width: 32px; height: 32px; display: block; }
 .fleet-card h3 { color: #fff; font-size: 19px; margin: 0 0 8px; }
 .fleet-card p { color: #9db1cc; font-size: 15px; line-height: 1.6; margin: 0; }
 .fleet-cta-banner {
