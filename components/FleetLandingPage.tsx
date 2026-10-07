@@ -56,10 +56,11 @@ function WalletIcon() {
   );
 }
 
-function WrenchIcon() {
+function InviteIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -87,16 +88,16 @@ export default function FleetLandingPage() {
     { icon: <RouteIcon />, title: "Trips", text: "Log trips and see where every load stands." },
     { icon: <ReceiptIcon />, title: "Expenses", text: "Fuel, repairs, tolls — every cost tracked." },
     { icon: <WalletIcon />, title: "Payroll", text: "Hourly or per-mile pay, calculated per period." },
-    { icon: <WrenchIcon />, title: "Maintenance", text: "Service reminders and maintenance logs." },
+    { icon: <InviteIcon />, title: "Driver Invites", text: "Invite drivers by email — they set up in minutes." },
   ];
 
   const checklist = [
-    "Know where every truck is",
-    "Keep driver information organized",
-    "Track every trip",
-    "Track fuel & expenses",
-    "Calculate driver pay",
-    "Keep documents in one place",
+    "See every driver, truck and trip in one dashboard",
+    "Drivers log trips from their own phone",
+    "Pay by the hour or by the mile",
+    "Weekly, bi-weekly or monthly pay periods",
+    "Track fuel, repairs and tolls",
+    "Invite drivers by email in seconds",
   ];
 
   return (
