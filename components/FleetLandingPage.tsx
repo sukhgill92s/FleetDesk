@@ -1,10 +1,112 @@
 import Link from "next/link";
 
+function Icon({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <div className="fleet-card-icon">{children}</div>;
+}
+
+function TruckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M3 6h11v10H3zM14 10h4l3 3v3h-7z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="18" cy="18" r="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function DriverIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M5 20c.8-3.4 3.1-5.2 7-5.2s6.2 1.8 7 5.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function RouteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="6" cy="18" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="18" cy="6" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M8.5 18h2.2c3.4 0 2.8-5.8 6.8-7.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ReceiptIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 8h6M9 12h6M9 16h3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function WalletIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4 6.5A2.5 2.5 0 0 1 6.5 4H19v16H6.5A2.5 2.5 0 0 1 4 17.5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M4 7h15M15 12h5v4h-5a2 2 0 1 1 0-4z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
 /**
  * Public marketing landing page — shown at "/" for logged-out visitors.
  * Logged-in users never see this (they route to /owner or /driver).
  */
 export default function FleetLandingPage() {
+  const features = [
+    { icon: <DriverIcon />, title: "Drivers", text: "Add drivers, track their trips and pay." },
+    { icon: <TruckIcon />, title: "Trucks", text: "Manage your trucks in one list." },
+    { icon: <WalletIcon />, title: "Pay Settings", text: "Hourly or per-mile, weekly or monthly." },
+    { icon: <ReceiptIcon />, title: "Expenses", text: "Fuel, repairs and costs tracked." },
+  ];
+
   return (
     <div className="fleet-landing">
       {/* ---------- Navbar ---------- */}
@@ -40,14 +142,9 @@ export default function FleetLandingPage() {
       <section className="fleet-section">
         <h2>Everything in one place</h2>
         <div className="fleet-grid">
-          {[
-            ["👨‍✈️", "Drivers", "Add drivers, track their trips and pay."],
-            ["🚚", "Trucks", "Manage your trucks in one list."],
-            ["⚙️", "Pay Settings", "Hourly or per-mile, weekly or monthly."],
-            ["🧾", "Expenses", "Fuel, repairs and costs tracked."],
-          ].map(([icon, title, text]) => (
+          {features.map(({ icon, title, text }) => (
             <div className="fleet-card" key={title}>
-              <div className="fleet-card-icon">{icon}</div>
+              <Icon>{icon}</Icon>
               <h3>{title}</h3>
               <p>{text}</p>
             </div>
@@ -79,3 +176,6 @@ export default function FleetLandingPage() {
     </div>
   );
 }
+
+// Keep RouteIcon referenced so the icon set stays complete for future cards.
+export { RouteIcon };
