@@ -182,6 +182,26 @@ export default function OwnerDashboard() {
           </button>
         </div>
 
+        {/* KPI summary cards */}
+        <div className="kpi-grid">
+          <div className="kpi-card">
+            <span className="kpi-num">{trips.length}</span>
+            <span className="kpi-label">{t("tripsCount")}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-num">{totMiles.toLocaleString()}</span>
+            <span className="kpi-label">{t("miles")}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-num">{cad(totPay)}</span>
+            <span className="kpi-label">{t("payOwed")}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-num">{cad(totExp)}</span>
+            <span className="kpi-label">{t("expenses")}</span>
+          </div>
+        </div>
+
         {loading ? (
           <p className="muted">{t("loading")}</p>
         ) : error ? (
@@ -264,9 +284,19 @@ export default function OwnerDashboard() {
                                 >
                                   <div className="row">
                                     <strong>
-                                      {tr.status === "pending" ? "⏳ " : ""}
                                       {tr.from_location} → {tr.to_location}
                                     </strong>
+                                    <span
+                                      className={
+                                        tr.status === "pending"
+                                          ? "badge badge-pending"
+                                          : "badge badge-delivered"
+                                      }
+                                    >
+                                      {tr.status === "pending"
+                                        ? `⏳ ${t("pending")}`
+                                        : `✓ ${t("delivered")}`}
+                                    </span>
                                     <span>
                                       {Number(tr.miles).toLocaleString()} mi
                                     </span>
@@ -299,15 +329,10 @@ export default function OwnerDashboard() {
           </div>
         )}
 
+        {/* Quick actions — Manage links already live in the bottom nav */}
         <div className="btn-row" style={{ marginTop: 16 }}>
-          <Link href="/owner/drivers" className="btn btn-secondary">
-            {t("manageDrivers")}
-          </Link>
-          <Link href="/owner/trucks" className="btn btn-secondary">
-            {t("manageTrucks")}
-          </Link>
-          <Link href="/owner/settings" className="btn btn-secondary">
-            ⚙️ {t("navSettings")}
+          <Link href="/owner/trips/new" className="btn">
+            ➕ {t("addTrip")}
           </Link>
         </div>
       </div>
@@ -317,6 +342,30 @@ export default function OwnerDashboard() {
           <h2>
             {t("expenses")} · {range.label}
           </h2>
+          {(() => {
+            const byCat: Record<string, number> = {};
+            expenses.forEach((e) => {
+              byCat[e.category] =
+                (byCat[e.category] ?? 0) + Number(e.amount_cad);
+            });
+            const missing = expenses.filter((e) => !e.receipt_path).length;
+            return (
+              <>
+                <div className="exp-breakdown">
+                  {Object.entries(byCat).map(([c, amt]) => (
+                    <span key={c} className="exp-chip">
+                      {c}: <b>{cad(amt)}</b>
+                    </span>
+                  ))}
+                </div>
+                {missing > 0 && (
+                  <p className="warn-line">
+                    🧾 {missing} {t("missingReceipts")}
+                  </p>
+                )}
+              </>
+            );
+          })()}
           {expenses.map((e) => {
             const d = drivers.find((x) => x.id === e.driver_id);
             return (
