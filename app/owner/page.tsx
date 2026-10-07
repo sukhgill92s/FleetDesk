@@ -290,12 +290,16 @@ export default function OwnerDashboard() {
                                       className={
                                         tr.status === "pending"
                                           ? "badge badge-pending"
-                                          : "badge badge-delivered"
+                                          : tr.status === "accepted"
+                                            ? "badge badge-delivered"
+                                            : "badge badge-completed"
                                       }
                                     >
                                       {tr.status === "pending"
                                         ? `⏳ ${t("pending")}`
-                                        : `✓ ${t("delivered")}`}
+                                        : tr.status === "accepted"
+                                          ? `✓ ${t("accepted")}`
+                                          : `🏁 ${t("completed")}`}
                                     </span>
                                     <span>
                                       {Number(tr.miles).toLocaleString()} mi
