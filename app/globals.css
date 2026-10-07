@@ -888,3 +888,86 @@ table.data tfoot td {
   .fleet-grid { grid-template-columns: 1fr; }
   .fleet-cta-banner { flex-direction: column; text-align: center; }
 }
+
+/* ============ FleetDesk landing v2 — professional SaaS ============ */
+.fleet-accent { color: #60a5fa; }
+.fleet-hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.fleet-cta-ghost {
+  display: inline-block; color: #fff; font-weight: 700; font-size: 17px;
+  text-decoration: none; border-radius: 12px; padding: 14px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.fleet-cta-sm { padding: 10px 20px; font-size: 15px; }
+.fleet-nav-links { display: flex; gap: 28px; }
+.fleet-nav-links a { color: #9db1cc; text-decoration: none; font-size: 15px; font-weight: 600; }
+.fleet-nav-links a:hover { color: #fff; }
+.fleet-nav-actions { display: flex; align-items: center; gap: 12px; }
+.fleet-hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; padding: 8px; cursor: pointer; }
+.fleet-hamburger span { width: 22px; height: 2px; background: #fff; border-radius: 2px; }
+.fleet-mobile-menu { display: none; flex-direction: column; background: #0d1830; border-bottom: 1px solid rgba(255,255,255,.08); }
+.fleet-mobile-menu a { color: #e6eefb; text-decoration: none; padding: 14px 24px; font-weight: 600; border-top: 1px solid rgba(255,255,255,.06); }
+
+/* dashboard preview */
+.fleet-preview-section { padding-top: 30px; }
+.fleet-dashboard {
+  text-align: left; background: linear-gradient(160deg, #101f3a, #0b1526);
+  border: 1px solid rgba(96, 165, 250, 0.25); border-radius: 20px;
+  padding: 26px; max-width: 860px; margin: 0 auto;
+  box-shadow: 0 24px 80px rgba(37, 99, 235, 0.18), 0 4px 24px rgba(0,0,0,.4);
+}
+.fleet-dashboard-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.fleet-dashboard-head h3 { color: #fff; font-size: 20px; margin: 0; }
+.fleet-sample-badge {
+  font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  color: #9db1cc; border: 1px solid rgba(157, 177, 204, .4); border-radius: 999px; padding: 4px 12px;
+}
+.fleet-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.fleet-stat { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); border-radius: 14px; padding: 16px 12px; text-align: center; }
+.fleet-stat b { display: block; color: #fff; font-size: 26px; margin-bottom: 4px; }
+.fleet-stat span { color: #9db1cc; font-size: 13px; }
+.fleet-dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fleet-dash-col { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 16px; }
+.fleet-dash-col h4 { color: #fff; font-size: 14px; margin: 0 0 10px; }
+.fleet-dash-col ul { list-style: none; margin: 0; padding: 0; }
+.fleet-dash-col li { color: #c6d5ec; font-size: 14px; padding: 6px 0; display: flex; align-items: center; gap: 8px; }
+.fleet-dash-col li b { margin-left: auto; color: #fff; }
+.fleet-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+
+/* features */
+.fleet-kicker { color: #7d93b3; font-size: 15px; margin: -18px 0 28px; }
+.fleet-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.fleet-card-icon { margin-bottom: 14px; color: #60a5fa; }
+.fleet-card-icon svg { width: 32px; height: 32px; display: block; }
+
+/* steps */
+.fleet-steps { display: flex; flex-direction: column; gap: 12px; max-width: 640px; margin: 0 auto; text-align: left; }
+.fleet-step { display: flex; gap: 16px; align-items: flex-start; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); border-radius: 16px; padding: 18px; }
+.fleet-step-num { flex: 0 0 36px; height: 36px; border-radius: 50%; background: #2563eb; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.fleet-step h3 { color: #fff; font-size: 17px; margin: 0 0 4px; }
+.fleet-step p { color: #9db1cc; font-size: 14px; margin: 0; line-height: 1.6; }
+
+/* checklist */
+.fleet-checklist { list-style: none; margin: 0 auto; padding: 0; max-width: 560px; text-align: left; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fleet-checklist li { display: flex; align-items: center; gap: 10px; color: #c6d5ec; font-size: 15px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 14px 16px; }
+.fleet-check { flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; background: rgba(37,99,235,.2); color: #60a5fa; display: flex; align-items: center; justify-content: center; }
+.fleet-check svg { width: 14px; height: 14px; }
+
+/* pricing */
+.fleet-pricing {
+  max-width: 520px; margin: 0 auto; background: linear-gradient(150deg, #14294d, #0d1830);
+  border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 20px; padding: 36px 28px;
+  box-shadow: 0 16px 60px rgba(37, 99, 235, 0.15);
+}
+.fleet-pricing h3 { color: #fff; font-size: 24px; margin: 0 0 10px; }
+.fleet-pricing p { color: #9db1cc; font-size: 15px; line-height: 1.7; margin: 0 0 24px; }
+
+@media (max-width: 720px) {
+  .fleet-nav-links { display: none; }
+  .fleet-hamburger { display: flex; }
+  .fleet-mobile-menu { display: flex; }
+  .fleet-stats { grid-template-columns: repeat(2, 1fr); }
+  .fleet-dash-cols { grid-template-columns: 1fr; }
+  .fleet-grid-3 { grid-template-columns: 1fr; }
+  .fleet-checklist { grid-template-columns: 1fr; }
+  .fleet-signin { display: none; }
+}
