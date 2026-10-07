@@ -30,6 +30,8 @@ export default function OwnerTripDetailPage() {
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [ready, setReady] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -67,6 +69,30 @@ export default function OwnerTripDetailPage() {
         <p className="muted">{t("loading")}</p>
       </div>
     );
+  }
+
+  async function markDelivered() {
+    if (!trip || saving) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("auth");
+      const { error } = await supabase
+        .from("trips")
+        .update({ status: "delivered" })
+        .eq("id", trip.id)
+        .eq("owner_id", user.id);
+      if (error) throw error;
+      setTrip({ ...trip, status: "delivered" });
+    } catch {
+      setSaveError(t("errorGeneric"));
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (notFound || !trip) {
@@ -112,10 +138,25 @@ export default function OwnerTripDetailPage() {
         ))}
       </div>
       <div className="btn-row" style={{ marginTop: 16 }}>
+        {trip.status === "pending" && (
+          <button
+            type="button"
+            className="btn"
+            onClick={markDelivered}
+            disabled={saving}
+          >
+            {saving ? t("loading") : `✓ ${t("markDelivered")}`}
+          </button>
+        )}
         <Link href="/owner" className="btn btn-ghost">
           {t("navDashboard")}
         </Link>
       </div>
+      {saveError && (
+        <p className="warn-line" style={{ marginTop: 12 }}>
+          {saveError}
+        </p>
+      )}
     </div>
   );
 }
