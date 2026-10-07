@@ -30,6 +30,7 @@ export default function DriverTripDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [ready, setReady] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   async function handleAccept() {
     if (!trip) return;
@@ -44,6 +45,22 @@ export default function DriverTripDetailPage() {
       setTrip({ ...trip, status: "accepted" });
     } finally {
       setAccepting(false);
+    }
+  }
+
+  async function handleComplete() {
+    if (!trip) return;
+    setCompleting(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("trips")
+        .update({ status: "completed" })
+        .eq("id", trip.id);
+      if (error) throw error;
+      setTrip({ ...trip, status: "completed" });
+    } finally {
+      setCompleting(false);
     }
   }
 
@@ -106,9 +123,14 @@ export default function DriverTripDetailPage() {
   }
 
   const rows: [string, string][] = [
-    ...(trip.status === "pending"
-      ? [["Status", `⏳ ${t("pending")}`] as [string, string]]
-      : []),
+    [
+      "Status",
+      trip.status === "pending"
+        ? `⏳ ${t("pending")}`
+        : trip.status === "accepted"
+          ? `✓ ${t("accepted")}`
+          : `🏁 ${t("completed")}`,
+    ] as [string, string],
     ...(trip.trip_number ? [[t("tripNumber"), trip.trip_number] as [string, string]] : []),
     [t("date"), prettyDate(trip.trip_date)],
     [t("from"), trip.from_location],
@@ -147,6 +169,16 @@ export default function DriverTripDetailPage() {
             onClick={handleAccept}
           >
             ✓ {t("accept")}
+          </button>
+        )}
+        {trip.status === "accepted" && (
+          <button
+            type="button"
+            className="btn"
+            disabled={completing}
+            onClick={handleComplete}
+          >
+            🏁 {t("markComplete")}
           </button>
         )}
       </div>
