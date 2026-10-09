@@ -178,303 +178,299 @@ export default function OwnerDashboard() {
       : `${cad(Number(d.per_mile_rate_cad))}/mi`;
   }
 
+  function avatarColor(name: string): string {
+    const palette = ["#8ab6f0", "#a78bfa", "#f0a6b8", "#7fd6a4", "#f5c66b", "#7fc4d6"];
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 997;
+    return palette[h % palette.length];
+  }
+
   return (
     <>
-      <div className="card">
-        <h1>{t("dashboardTitle")}</h1>
-        <div className="week-nav">
-          <button
-            type="button"
-            className="btn-ghost btn"
-            onClick={() => setPeriodOffset((o) => o - 1)}
-          >
-            {t("prevPeriod")}
-          </button>
-          <span className="week-label">{range.label}</span>
-          <button
-            type="button"
-            className="btn-ghost btn"
-            onClick={() => setPeriodOffset((o) => o + 1)}
-            disabled={periodOffset >= 0}
-          >
-            {t("nextPeriod")}
-          </button>
-          <a
-            className="btn-ghost btn"
-            style={{ textDecoration: "none" }}
-            href={`/api/payroll-csv?period=${payPeriod}&offset=${periodOffset}`}
-            download
-          >
-            📊 {t("payrollCsv")}
-          </a>
+      {/* Period navigator */}
+      <div className="fd-period-card">
+        <button
+          type="button"
+          className="fd-period-arrow"
+          onClick={() => setPeriodOffset((o) => o - 1)}
+          aria-label={t("prevPeriod")}
+        >
+          ‹
+        </button>
+        <span className="fd-period-label">{range.label}</span>
+        <button
+          type="button"
+          className="fd-period-arrow"
+          onClick={() => setPeriodOffset((o) => o + 1)}
+          disabled={periodOffset >= 0}
+          aria-label={t("nextPeriod")}
+        >
+          ›
+        </button>
+        <a
+          className="fd-csv-btn"
+          href={`/api/payroll-csv?period=${payPeriod}&offset=${periodOffset}`}
+          download
+        >
+          ⬇ {t("payrollCsv")}
+        </a>
+      </div>
+
+      {/* KPI summary */}
+      <div className="fd-kpi-grid">
+        <div className="fd-kpi">
+          <span className="fd-kpi-icon" aria-hidden="true">📍</span>
+          <span className="fd-kpi-num">{trips.length}</span>
+          <span className="fd-kpi-label">{t("tripsCount")}</span>
         </div>
-
-        {/* KPI summary cards */}
-        <div className="kpi-grid">
-          <div className="kpi-card">
-            <span className="kpi-num">{trips.length}</span>
-            <span className="kpi-label">{t("tripsCount")}</span>
-          </div>
-          <div className="kpi-card">
-            <span className="kpi-num">{totMiles.toLocaleString()}</span>
-            <span className="kpi-label">{t("miles")}</span>
-          </div>
-          <div className="kpi-card">
-            <span className="kpi-num">{cad(totPay)}</span>
-            <span className="kpi-label">{t("payOwed")}</span>
-          </div>
-          <div className="kpi-card">
-            <span className="kpi-num">{cad(totExp)}</span>
-            <span className="kpi-label">{t("expenses")}</span>
-          </div>
+        <div className="fd-kpi">
+          <span className="fd-kpi-icon" aria-hidden="true">🗺️</span>
+          <span className="fd-kpi-num">{totMiles.toLocaleString()}</span>
+          <span className="fd-kpi-label">{t("miles")}</span>
         </div>
-
-        {loading ? (
-          <p className="muted">{t("loading")}</p>
-        ) : error ? (
-          <div className="error-box">
-            {error}{" "}
-            <button type="button" className="link" onClick={load}>
-              {t("retry")}
-            </button>
-          </div>
-        ) : drivers.length === 0 ? (
-          <p className="muted">{t("noDrivers")}</p>
-        ) : (
-          <div className="table-wrap">
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>{t("driver")}</th>
-                  <th className="num">{t("miles")}</th>
-                  <th className="num">
-                    {t("payOwed")} ({t("rate")})
-                  </th>
-                  <th className="num">{t("expenses")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.map((s) => {
-                  const dTrips = trips
-                    .filter((x) => x.driver_id === s.driver.id)
-                    .sort((a, b) => {
-                      if (a.status === "pending" && b.status !== "pending")
-                        return -1;
-                      if (a.status !== "pending" && b.status === "pending")
-                        return 1;
-                      return a.trip_date < b.trip_date ? 1 : -1;
-                    });
-                  const isOpen = expandedDriver === s.driver.id;
-                  return (
-                    <Fragment key={s.driver.id}>
-                      <tr>
-                        <td>
-                          <strong
-                            onClick={() =>
-                              setExpandedDriver(isOpen ? null : s.driver.id)
-                            }
-                            style={{
-                              cursor: "pointer",
-                              textDecoration: "underline",
-                            }}
-                          >
-                            {s.driver.name} {isOpen ? "▾" : "▸"}
-                          </strong>
-                          <div className="muted" style={{ fontSize: 13 }}>
-                            {s.tripCount} {t("tripsCount")} · {rateLabel(s.driver)}
-                            {s.driver.pay_type === "hourly" &&
-                              ` · ${s.hours.toLocaleString()} ${t("hours").toLowerCase()}`}
-                            {s.pendingCount > 0 &&
-                              ` · ⏳ ${s.pendingCount} ${t("pending")}`}
-                          </div>
-                        </td>
-                        <td className="num">{s.miles.toLocaleString()}</td>
-                        <td className="num">{cad(s.pay)}</td>
-                        <td className="num">{cad(s.expTotal)}</td>
-                      </tr>
-                      {isOpen && (
-                        <tr>
-                          <td colSpan={4} style={{ paddingTop: 0 }}>
-                            <a
-                              className="btn btn-secondary"
-                              style={{
-                                display: "inline-block",
-                                marginBottom: 10,
-                                fontSize: 14,
-                                padding: "8px 14px",
-                                textDecoration: "none",
-                              }}
-                              href={`/api/paystub?driverId=${s.driver.id}&period=${payPeriod}&offset=${periodOffset}`}
-                              download
-                            >
-                              📄 {t("paystubPdf")}
-                            </a>
-                            {dTrips.length === 0 ? (
-                              <p className="muted">{t("noTripsYet")}</p>
-                            ) : (
-                              dTrips.map((tr) => (
-                                <Link
-                                  key={tr.id}
-                                  href={`/owner/trips/${tr.id}`}
-                                  className="list-item"
-                                  style={{
-                                    display: "block",
-                                    textDecoration: "none",
-                                    color: "inherit",
-                                  }}
-                                >
-                                  <div className="row">
-                                    <strong>
-                                      {tr.from_location} → {tr.to_location}
-                                    </strong>
-                                    <span
-                                      className={
-                                        tr.status === "pending"
-                                          ? "badge badge-pending"
-                                          : tr.status === "accepted"
-                                            ? "badge badge-delivered"
-                                            : "badge badge-completed"
-                                      }
-                                    >
-                                      {tr.status === "pending"
-                                        ? `⏳ ${t("pending")}`
-                                        : tr.status === "accepted"
-                                          ? `✓ ${t("accepted")}`
-                                          : `🏁 ${t("completed")}`}
-                                    </span>
-                                    <span>
-                                      {Number(tr.miles).toLocaleString()} mi
-                                    </span>
-                                  </div>
-                                  <div className="sub">
-                                    {prettyDate(tr.trip_date)}
-                                    {tr.trip_number
-                                      ? ` · ${t("tripNumber")}: ${tr.trip_number}`
-                                      : ""}
-                                  </div>
-                                </Link>
-                              ))
-                            )}
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td>{t("total")}</td>
-                  <td className="num">{totMiles.toLocaleString()}</td>
-                  <td className="num">{cad(totPay)}</td>
-                  <td className="num">{cad(totExp)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
-
-        {/* Quick actions — Manage links already live in the bottom nav */}
-        <div className="btn-row" style={{ marginTop: 16 }}>
-          <Link href="/owner/trips/new" className="btn">
-            ➕ {t("addTrip")}
-          </Link>
+        <div className="fd-kpi">
+          <span className="fd-kpi-icon" aria-hidden="true">💰</span>
+          <span className="fd-kpi-num fd-kpi-green">{cad(totPay)}</span>
+          <span className="fd-kpi-label">{t("payOwed")}</span>
+        </div>
+        <div className="fd-kpi">
+          <span className="fd-kpi-icon" aria-hidden="true">🧾</span>
+          <span className="fd-kpi-num">{cad(totExp)}</span>
+          <span className="fd-kpi-label">{t("expenses")}</span>
         </div>
       </div>
 
+      {loading ? (
+        <p className="muted">{t("loading")}</p>
+      ) : error ? (
+        <div className="error-box">
+          {error}{" "}
+          <button type="button" className="link" onClick={load}>
+            {t("retry")}
+          </button>
+        </div>
+      ) : drivers.length === 0 ? (
+        <p className="muted">{t("noDrivers")}</p>
+      ) : (
+        <>
+          <h2 className="fd-section-title">{t("drivers")}</h2>
+          <div className="fd-card">
+            {summary.map((s) => {
+              const dTrips = trips
+                .filter((x) => x.driver_id === s.driver.id)
+                .sort((a, b) => {
+                  if (a.status === "pending" && b.status !== "pending")
+                    return -1;
+                  if (a.status !== "pending" && b.status === "pending") return 1;
+                  return a.trip_date < b.trip_date ? 1 : -1;
+                });
+              const isOpen = expandedDriver === s.driver.id;
+              return (
+                <Fragment key={s.driver.id}>
+                  <button
+                    type="button"
+                    className="fd-driver-row"
+                    onClick={() => setExpandedDriver(isOpen ? null : s.driver.id)}
+                    aria-expanded={isOpen}
+                  >
+                    <span
+                      className="fd-avatar"
+                      style={{ background: avatarColor(s.driver.name) }}
+                      aria-hidden="true"
+                    >
+                      {s.driver.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="fd-driver-info">
+                      <strong>{s.driver.name}</strong>
+                      <span className="muted">
+                        {s.miles.toLocaleString()} {t("miles").toLowerCase()} ·{" "}
+                        {rateLabel(s.driver)}
+                        {s.pendingCount > 0 &&
+                          ` · ⏳ ${s.pendingCount} ${t("pending")}`}
+                      </span>
+                    </span>
+                    <span className="fd-driver-pay">{cad(s.pay)}</span>
+                    <span className="fd-chev" aria-hidden="true">
+                      {isOpen ? "▾" : "›"}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="fd-driver-detail">
+                      <a
+                        className="btn btn-secondary"
+                        style={{
+                          display: "inline-block",
+                          marginBottom: 10,
+                          fontSize: 14,
+                          padding: "8px 14px",
+                          textDecoration: "none",
+                        }}
+                        href={`/api/paystub?driverId=${s.driver.id}&period=${payPeriod}&offset=${periodOffset}`}
+                        download
+                      >
+                        📄 {t("paystubPdf")}
+                      </a>
+                      {dTrips.length === 0 ? (
+                        <p className="muted">{t("noTripsYet")}</p>
+                      ) : (
+                        dTrips.map((tr) => (
+                          <Link
+                            key={tr.id}
+                            href={`/owner/trips/${tr.id}`}
+                            className="list-item"
+                            style={{
+                              display: "block",
+                              textDecoration: "none",
+                              color: "inherit",
+                            }}
+                          >
+                            <div className="row">
+                              <strong>
+                                {tr.from_location} → {tr.to_location}
+                              </strong>
+                              <span
+                                className={
+                                  tr.status === "pending"
+                                    ? "badge badge-pending"
+                                    : tr.status === "accepted"
+                                      ? "badge badge-delivered"
+                                      : "badge badge-completed"
+                                }
+                              >
+                                {tr.status === "pending"
+                                  ? `⏳ ${t("pending")}`
+                                  : tr.status === "accepted"
+                                    ? `✓ ${t("accepted")}`
+                                    : `🏁 ${t("completed")}`}
+                              </span>
+                              <span>{Number(tr.miles).toLocaleString()} mi</span>
+                            </div>
+                            <div className="sub">
+                              {prettyDate(tr.trip_date)}
+                              {tr.trip_number
+                                ? ` · ${t("tripNumber")}: ${tr.trip_number}`
+                                : ""}
+                            </div>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </Fragment>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Quick actions — Manage links already live in the bottom nav */}
+      <div className="btn-row" style={{ marginTop: 16 }}>
+        <Link href="/owner/trips/new" className="btn">
+          ➕ {t("addTrip")}
+        </Link>
+      </div>
+
       {expenses.length > 0 && (
-        <div className="card">
-          <h2>
+        <>
+          <h2 className="fd-section-title">
             {t("expenses")} · {range.label}
           </h2>
-          {(() => {
-            const byCat: Record<string, number> = {};
-            expenses.forEach((e) => {
-              byCat[e.category] =
-                (byCat[e.category] ?? 0) + Number(e.amount_cad);
-            });
-            const missing = expenses.filter((e) => !e.receipt_path).length;
-            return (
-              <>
-                <div className="exp-breakdown">
-                  {Object.entries(byCat).map(([c, amt]) => (
-                    <span key={c} className="exp-chip">
-                      {c}: <b>{cad(amt)}</b>
-                    </span>
-                  ))}
-                </div>
-                {missing > 0 && (
-                  <p className="warn-line">
-                    🧾 {missing} {t("missingReceipts")}
-                  </p>
-                )}
-              </>
-            );
-          })()}
-          {expenses.map((e) => {
-            const d = drivers.find((x) => x.id === e.driver_id);
-            return (
-              <div key={e.id} className="list-item">
-                <div className="row">
-                  <strong>{d?.name ?? "—"}</strong>
-                  <strong>{cad(Number(e.amount_cad))}</strong>
-                </div>
-                <div className="sub">
-                  {prettyDate(e.expense_date)} · {e.category}
-                  {e.receipt_path && (
-                    <>
-                      {" · "}
+          <div className="fd-card">
+            {(() => {
+              const byCat: Record<string, number> = {};
+              expenses.forEach((e) => {
+                byCat[e.category] =
+                  (byCat[e.category] ?? 0) + Number(e.amount_cad);
+              });
+              const missing = expenses.filter((e) => !e.receipt_path).length;
+              return (
+                <>
+                  <div className="exp-breakdown">
+                    {Object.entries(byCat).map(([c, amt]) => (
+                      <span key={c} className="exp-chip">
+                        {c}: <b>{cad(amt)}</b>
+                      </span>
+                    ))}
+                  </div>
+                  {missing > 0 && (
+                    <p className="warn-line">
+                      🧾 {missing} {t("missingReceipts")}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+            {expenses.map((e) => {
+              const d = drivers.find((x) => x.id === e.driver_id);
+              return (
+                <div key={e.id} className="fd-exp-row">
+                  <div className="row">
+                    <strong>
+                      {e.category} <span className="muted">· {d?.name ?? "—"}</span>
+                    </strong>
+                    <strong>{cad(Number(e.amount_cad))}</strong>
+                  </div>
+                  <div className="sub">
+                    {prettyDate(e.expense_date)}
+                    {e.receipt_path && (
+                      <>
+                        {" · "}
+                        <button
+                          type="button"
+                          className="link"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            cursor: "pointer",
+                            fontSize: 13,
+                          }}
+                          onClick={() => openReceipt(e.receipt_path!, e.id)}
+                          disabled={receiptLoading === e.id}
+                        >
+                          {receiptLoading === e.id
+                            ? t("loading")
+                            : `🧾 ${t("viewReceipt")}`}
+                        </button>
+                      </>
+                    )}{" "}
+                    {e.approved === true ? (
+                      <span className="badge badge-delivered">
+                        ✓ {t("approved")}
+                      </span>
+                    ) : e.approved === false ? (
+                      <span className="badge badge-rejected">
+                        ✗ {t("rejected")}
+                      </span>
+                    ) : (
+                      <span className="badge">⏳ {t("pending")}</span>
+                    )}
+                  </div>
+                  {e.approved === null && (
+                    <div className="row" style={{ marginTop: 8, gap: 8 }}>
                       <button
                         type="button"
-                        className="link"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          padding: 0,
-                          cursor: "pointer",
-                          fontSize: 13,
-                        }}
-                        onClick={() => openReceipt(e.receipt_path!, e.id)}
-                        disabled={receiptLoading === e.id}
+                        className="btn btn-secondary"
+                        style={{ fontSize: 14, padding: "8px 14px" }}
+                        onClick={() => setApproval(e.id, true)}
                       >
-                        {receiptLoading === e.id
-                          ? t("loading")
-                          : `🧾 ${t("viewReceipt")}`}
+                        ✓ {t("approve")}
                       </button>
-                    </>
-                  )}{" "}
-                  {e.approved === true ? (
-                    <span className="badge badge-delivered">✓ {t("approved")}</span>
-                  ) : e.approved === false ? (
-                    <span className="badge badge-rejected">✗ {t("rejected")}</span>
-                  ) : (
-                    <span className="badge">⏳ {t("pending")}</span>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ fontSize: 14, padding: "8px 14px" }}
+                        onClick={() => setApproval(e.id, false)}
+                      >
+                        ✗ {t("reject")}
+                      </button>
+                    </div>
                   )}
                 </div>
-                {e.approved === null && (
-                  <div className="row" style={{ marginTop: 8, gap: 8 }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ fontSize: 14, padding: "8px 14px" }}
-                      onClick={() => setApproval(e.id, true)}
-                    >
-                      ✓ {t("approve")}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ fontSize: 14, padding: "8px 14px" }}
-                      onClick={() => setApproval(e.id, false)}
-                    >
-                      ✗ {t("reject")}
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {receiptUrl && (
