@@ -65,7 +65,7 @@ export async function GET(request: Request) {
           .lte("trip_date", endISO),
         admin
           .from("expenses")
-          .select("driver_id,amount_cad")
+          .select("driver_id,amount_cad,approved")
           .eq("owner_id", user.id)
           .gte("expense_date", startISO)
           .lte("expense_date", endISO),
@@ -86,7 +86,9 @@ export async function GET(request: Request) {
     ];
     for (const d of drivers ?? []) {
       const dTrips = (trips ?? []).filter((t) => t.driver_id === d.id);
-      const dExp = (expenses ?? []).filter((e) => e.driver_id === d.id);
+      const dExp = (expenses ?? []).filter(
+        (e) => e.driver_id === d.id && e.approved !== false
+      );
       const miles = dTrips.reduce((s, t) => s + Number(t.miles ?? 0), 0);
       const hours = dTrips.reduce((s, t) => s + Number(t.hours ?? 0), 0);
       const pay = driverPay(
