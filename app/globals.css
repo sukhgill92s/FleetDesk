@@ -305,10 +305,76 @@ body::before {
 }
 
 .fdash-section {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
-  color: #0f172a;
-  margin: 4px 2px 8px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #64748b;
+  margin: 8px 4px 12px;
+}
+
+.fdash-pay {
+  font-weight: 700;
+  font-size: 14px;
+  color: #059669;
+  white-space: nowrap;
+}
+
+.fdash-chev {
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+}
+
+.fdash-chev svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fdash-detail {
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, .8);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  margin: -8px 0 12px;
+  padding: 6px 14px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+}
+
+.fdash-driver.open {
+  border-radius: 12px 12px 0 0;
+}
+
+.fdash-addtrip {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  cursor: pointer;
+  text-decoration: none;
+  margin-bottom: 4px;
+}
+
+.fdash-addtrip:hover {
+  background: #4338ca;
+}
+
+.fdash-addtrip:active {
+  background: #3730a3;
+}
+
+.fdash-addtrip svg {
+  width: 20px;
+  height: 20px;
 }
 
 .fdash-card {
@@ -323,20 +389,30 @@ body::before {
 .fdash-driver {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 14px 16px;
-  background: none;
-  border: none;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, .8);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
   cursor: pointer;
   text-align: left;
   font: inherit;
   color: inherit;
+  transition: border-color .15s;
 }
 
-.fdash-driver.last {
-  border-bottom: none;
+.fdash-driver:hover {
+  border-color: #cbd5e1;
+}
+
+.fdash-driver-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .fdash-avatar {
@@ -346,14 +422,15 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+  color: #4338ca;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
 .fdash-dinfo {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -362,35 +439,30 @@ body::before {
 
 .fdash-dinfo strong {
   font-size: 14px;
+  font-weight: 600;
   color: #0f172a;
 }
 
 .fdash-dinfo span {
   font-size: 12px;
+  font-weight: 500;
   color: #64748b;
 }
 
-.fdash-pay {
-  font-weight: 700;
-  font-size: 15px;
-  color: #059669;
-  white-space: nowrap;
+.fdash-rate {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
 }
 
-.fdash-chev {
-  color: #94a3b8;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.fdash-detail {
-  padding: 6px 16px 14px 68px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #fafbfe;
-}
-
-.fdash-detail.last {
-  border-bottom: none;
+.fdash-driver-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .fdash-exp {
@@ -758,23 +830,42 @@ table.data tfoot td {
   left: 0;
   right: 0;
   background: #fff;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #e2e8f0;
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+  z-index: 50;
+}
+
+.bottom-nav-inner {
+  max-width: 28rem;
+  margin: 0 auto;
   display: flex;
-  z-index: 10;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .bottom-nav a {
-  flex: 1;
-  text-align: center;
-  padding: 12px 4px calc(12px + env(safe-area-inset-bottom));
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #94a3b8;
   text-decoration: none;
+  transition: color .15s;
+}
+
+.bottom-nav a svg {
+  width: 20px;
+  height: 20px;
+}
+
+.bottom-nav a:hover {
+  color: #475569;
 }
 
 .bottom-nav a.active {
-  color: var(--primary);
+  color: #4f46e5;
+  font-weight: 600;
 }
 
 .link {
