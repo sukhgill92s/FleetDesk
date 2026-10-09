@@ -186,57 +186,91 @@ export default function OwnerDashboard() {
   }
 
   return (
-    <>
-      {/* Period navigator */}
-      <div className="fd-period-card">
-        <button
-          type="button"
-          className="fd-period-arrow"
-          onClick={() => setPeriodOffset((o) => o - 1)}
-          aria-label={t("prevPeriod")}
-        >
-          ‹
-        </button>
-        <span className="fd-period-label">{range.label}</span>
-        <button
-          type="button"
-          className="fd-period-arrow"
-          onClick={() => setPeriodOffset((o) => o + 1)}
-          disabled={periodOffset >= 0}
-          aria-label={t("nextPeriod")}
-        >
-          ›
-        </button>
+    <div className="fdash">
+      {/* Date range & export bar */}
+      <div className="fdash-bar">
+        <div className="fdash-nav">
+          <button
+            type="button"
+            className="fdash-arrow"
+            onClick={() => setPeriodOffset((o) => o - 1)}
+            aria-label={t("prevPeriod")}
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="fdash-range">{range.label}</span>
+          <button
+            type="button"
+            className="fdash-arrow"
+            onClick={() => setPeriodOffset((o) => o + 1)}
+            disabled={periodOffset >= 0}
+            aria-label={t("nextPeriod")}
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
         <a
-          className="fd-csv-btn"
+          className="fdash-csv"
           href={`/api/payroll-csv?period=${payPeriod}&offset=${periodOffset}`}
           download
         >
-          ⬇ {t("payrollCsv")}
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          {t("payrollCsv")}
         </a>
       </div>
 
-      {/* KPI summary */}
-      <div className="fd-kpi-grid">
-        <div className="fd-kpi">
-          <span className="fd-kpi-icon" aria-hidden="true">📍</span>
-          <span className="fd-kpi-num">{trips.length}</span>
-          <span className="fd-kpi-label">{t("tripsCount")}</span>
+      {/* Metric cards */}
+      <div className="fdash-grid">
+        <div className="fdash-metric">
+          <div className="fdash-metric-top">
+            <span className="fdash-metric-label">{t("tripsCount")}</span>
+            <span className="fdash-metric-icon mi-indigo" aria-hidden="true">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </span>
+          </div>
+          <span className="fdash-metric-val">{trips.length}</span>
         </div>
-        <div className="fd-kpi">
-          <span className="fd-kpi-icon" aria-hidden="true">🗺️</span>
-          <span className="fd-kpi-num">{totMiles.toLocaleString()}</span>
-          <span className="fd-kpi-label">{t("miles")}</span>
+        <div className="fdash-metric">
+          <div className="fdash-metric-top">
+            <span className="fdash-metric-label">{t("miles")}</span>
+            <span className="fdash-metric-icon mi-blue" aria-hidden="true">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </span>
+          </div>
+          <span className="fdash-metric-val">{totMiles.toLocaleString()}</span>
         </div>
-        <div className="fd-kpi">
-          <span className="fd-kpi-icon" aria-hidden="true">💰</span>
-          <span className="fd-kpi-num fd-kpi-green">{cad(totPay)}</span>
-          <span className="fd-kpi-label">{t("payOwed")}</span>
+        <div className="fdash-metric">
+          <div className="fdash-metric-top">
+            <span className="fdash-metric-label">{t("payOwed")}</span>
+            <span className="fdash-metric-icon mi-emerald" aria-hidden="true">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+          </div>
+          <span className="fdash-metric-val green">{cad(totPay)}</span>
         </div>
-        <div className="fd-kpi">
-          <span className="fd-kpi-icon" aria-hidden="true">🧾</span>
-          <span className="fd-kpi-num">{cad(totExp)}</span>
-          <span className="fd-kpi-label">{t("expenses")}</span>
+        <div className="fdash-metric">
+          <div className="fdash-metric-top">
+            <span className="fdash-metric-label">{t("expenses")}</span>
+            <span className="fdash-metric-icon mi-amber" aria-hidden="true">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+              </svg>
+            </span>
+          </div>
+          <span className="fdash-metric-val">{cad(totExp)}</span>
         </div>
       </div>
 
@@ -253,9 +287,9 @@ export default function OwnerDashboard() {
         <p className="muted">{t("noDrivers")}</p>
       ) : (
         <>
-          <h2 className="fd-section-title">{t("drivers")}</h2>
-          <div className="fd-card">
-            {summary.map((s) => {
+          <h2 className="fdash-section">{t("drivers")}</h2>
+          <div className="fdash-card">
+            {summary.map((s, i) => {
               const dTrips = trips
                 .filter((x) => x.driver_id === s.driver.id)
                 .sort((a, b) => {
@@ -265,43 +299,44 @@ export default function OwnerDashboard() {
                   return a.trip_date < b.trip_date ? 1 : -1;
                 });
               const isOpen = expandedDriver === s.driver.id;
+              const isLast = i === summary.length - 1 && !isOpen;
               return (
                 <Fragment key={s.driver.id}>
                   <button
                     type="button"
-                    className="fd-driver-row"
+                    className={`fdash-driver${isLast ? " last" : ""}`}
                     onClick={() => setExpandedDriver(isOpen ? null : s.driver.id)}
                     aria-expanded={isOpen}
                   >
                     <span
-                      className="fd-avatar"
+                      className="fdash-avatar"
                       style={{ background: avatarColor(s.driver.name) }}
                       aria-hidden="true"
                     >
                       {s.driver.name.charAt(0).toUpperCase()}
                     </span>
-                    <span className="fd-driver-info">
+                    <span className="fdash-dinfo">
                       <strong>{s.driver.name}</strong>
-                      <span className="muted">
+                      <span>
                         {s.miles.toLocaleString()} {t("miles").toLowerCase()} ·{" "}
                         {rateLabel(s.driver)}
                         {s.pendingCount > 0 &&
                           ` · ⏳ ${s.pendingCount} ${t("pending")}`}
                       </span>
                     </span>
-                    <span className="fd-driver-pay">{cad(s.pay)}</span>
-                    <span className="fd-chev" aria-hidden="true">
+                    <span className="fdash-pay">{cad(s.pay)}</span>
+                    <span className="fdash-chev" aria-hidden="true">
                       {isOpen ? "▾" : "›"}
                     </span>
                   </button>
                   {isOpen && (
-                    <div className="fd-driver-detail">
+                    <div className={`fdash-detail${isLast ? " last" : ""}`}>
                       <a
                         className="btn btn-secondary"
                         style={{
                           display: "inline-block",
                           marginBottom: 10,
-                          fontSize: 14,
+                          fontSize: 13,
                           padding: "8px 14px",
                           textDecoration: "none",
                         }}
@@ -331,10 +366,10 @@ export default function OwnerDashboard() {
                               <span
                                 className={
                                   tr.status === "pending"
-                                    ? "badge badge-pending"
+                                    ? "pill pill-pending"
                                     : tr.status === "accepted"
-                                      ? "badge badge-delivered"
-                                      : "badge badge-completed"
+                                      ? "pill pill-info"
+                                      : "pill pill-approved"
                                 }
                               >
                                 {tr.status === "pending"
@@ -363,8 +398,7 @@ export default function OwnerDashboard() {
         </>
       )}
 
-      {/* Quick actions — Manage links already live in the bottom nav */}
-      <div className="btn-row" style={{ marginTop: 16 }}>
+      <div className="btn-row" style={{ marginBottom: 16 }}>
         <Link href="/owner/trips/new" className="btn">
           ➕ {t("addTrip")}
         </Link>
@@ -372,10 +406,10 @@ export default function OwnerDashboard() {
 
       {expenses.length > 0 && (
         <>
-          <h2 className="fd-section-title">
+          <h2 className="fdash-section">
             {t("expenses")} · {range.label}
           </h2>
-          <div className="fd-card">
+          <div className="fdash-card">
             {(() => {
               const byCat: Record<string, number> = {};
               expenses.forEach((e) => {
@@ -385,7 +419,7 @@ export default function OwnerDashboard() {
               const missing = expenses.filter((e) => !e.receipt_path).length;
               return (
                 <>
-                  <div className="exp-breakdown">
+                  <div className="exp-breakdown" style={{ padding: "12px 16px 0" }}>
                     {Object.entries(byCat).map(([c, amt]) => (
                       <span key={c} className="exp-chip">
                         {c}: <b>{cad(amt)}</b>
@@ -393,20 +427,26 @@ export default function OwnerDashboard() {
                     ))}
                   </div>
                   {missing > 0 && (
-                    <p className="warn-line">
+                    <p className="warn-line" style={{ padding: "0 16px" }}>
                       🧾 {missing} {t("missingReceipts")}
                     </p>
                   )}
                 </>
               );
             })()}
-            {expenses.map((e) => {
+            {expenses.map((e, i) => {
               const d = drivers.find((x) => x.id === e.driver_id);
               return (
-                <div key={e.id} className="fd-exp-row">
+                <div
+                  key={e.id}
+                  className={`fdash-exp${i === expenses.length - 1 ? " last" : ""}`}
+                >
                   <div className="row">
                     <strong>
-                      {e.category} <span className="muted">· {d?.name ?? "—"}</span>
+                      {e.category}{" "}
+                      <span style={{ fontWeight: 400, color: "#64748b", fontSize: 13 }}>
+                        · {d?.name ?? "—"}
+                      </span>
                     </strong>
                     <strong>{cad(Number(e.amount_cad))}</strong>
                   </div>
@@ -435,15 +475,11 @@ export default function OwnerDashboard() {
                       </>
                     )}{" "}
                     {e.approved === true ? (
-                      <span className="badge badge-delivered">
-                        ✓ {t("approved")}
-                      </span>
+                      <span className="pill pill-approved">✓ {t("approved")}</span>
                     ) : e.approved === false ? (
-                      <span className="badge badge-rejected">
-                        ✗ {t("rejected")}
-                      </span>
+                      <span className="pill pill-rejected">✗ {t("rejected")}</span>
                     ) : (
-                      <span className="badge">⏳ {t("pending")}</span>
+                      <span className="pill pill-pending">⏳ {t("pending")}</span>
                     )}
                   </div>
                   {e.approved === null && (
@@ -451,7 +487,7 @@ export default function OwnerDashboard() {
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        style={{ fontSize: 14, padding: "8px 14px" }}
+                        style={{ fontSize: 13, padding: "7px 12px" }}
                         onClick={() => setApproval(e.id, true)}
                       >
                         ✓ {t("approve")}
@@ -459,7 +495,7 @@ export default function OwnerDashboard() {
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        style={{ fontSize: 14, padding: "8px 14px" }}
+                        style={{ fontSize: 13, padding: "7px 12px" }}
                         onClick={() => setApproval(e.id, false)}
                       >
                         ✗ {t("reject")}
@@ -493,6 +529,6 @@ export default function OwnerDashboard() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
