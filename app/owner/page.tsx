@@ -178,12 +178,12 @@ export default function OwnerDashboard() {
       : `${cad(Number(d.per_mile_rate_cad))}/mi`;
   }
 
-  function avatarColor(name: string): string {
-    const palette = ["#8ab6f0", "#a78bfa", "#f0a6b8", "#7fd6a4", "#f5c66b", "#7fc4d6"];
-    let h = 0;
-    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 997;
-    return palette[h % palette.length];
+  function initials(name: string): string {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   }
+
 
   return (
     <div className="fdash">
@@ -287,9 +287,9 @@ export default function OwnerDashboard() {
         <p className="muted">{t("noDrivers")}</p>
       ) : (
         <>
-          <h2 className="fdash-section">{t("drivers")}</h2>
-          <div className="fdash-card">
-            {summary.map((s, i) => {
+          <h2 className="fdash-section">{t("driversSummary")}</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+            {summary.map((s) => {
               const dTrips = trips
                 .filter((x) => x.driver_id === s.driver.id)
                 .sort((a, b) => {
@@ -299,38 +299,40 @@ export default function OwnerDashboard() {
                   return a.trip_date < b.trip_date ? 1 : -1;
                 });
               const isOpen = expandedDriver === s.driver.id;
-              const isLast = i === summary.length - 1 && !isOpen;
               return (
                 <Fragment key={s.driver.id}>
                   <button
                     type="button"
-                    className={`fdash-driver${isLast ? " last" : ""}`}
+                    className={`fdash-driver${isOpen ? " open" : ""}`}
                     onClick={() => setExpandedDriver(isOpen ? null : s.driver.id)}
                     aria-expanded={isOpen}
                   >
-                    <span
-                      className="fdash-avatar"
-                      style={{ background: avatarColor(s.driver.name) }}
-                      aria-hidden="true"
-                    >
-                      {s.driver.name.charAt(0).toUpperCase()}
-                    </span>
-                    <span className="fdash-dinfo">
-                      <strong>{s.driver.name}</strong>
-                      <span>
-                        {s.miles.toLocaleString()} {t("miles").toLowerCase()} ·{" "}
-                        {rateLabel(s.driver)}
-                        {s.pendingCount > 0 &&
-                          ` · ⏳ ${s.pendingCount} ${t("pending")}`}
+                    <span className="fdash-driver-main">
+                      <span className="fdash-avatar" aria-hidden="true">
+                        {initials(s.driver.name)}
+                      </span>
+                      <span className="fdash-dinfo">
+                        <strong>{s.driver.name}</strong>
+                        <span>
+                          {s.miles.toLocaleString()} {t("miles").toLowerCase()}{" "}
+                          <span style={{ color: "#cbd5e1" }}>·</span>{" "}
+                          <span className="fdash-rate">{rateLabel(s.driver)}</span>
+                          {s.pendingCount > 0 &&
+                            ` · ⏳ ${s.pendingCount} ${t("pending")}`}
+                        </span>
                       </span>
                     </span>
-                    <span className="fdash-pay">{cad(s.pay)}</span>
-                    <span className="fdash-chev" aria-hidden="true">
-                      {isOpen ? "▾" : "›"}
+                    <span className="fdash-driver-right">
+                      <span className="fdash-pay">{cad(s.pay)}</span>
+                      <span className="fdash-chev" aria-hidden="true">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
                     </span>
                   </button>
                   {isOpen && (
-                    <div className={`fdash-detail${isLast ? " last" : ""}`}>
+                    <div className="fdash-detail">
                       <a
                         className="btn btn-secondary"
                         style={{
@@ -398,9 +400,12 @@ export default function OwnerDashboard() {
         </>
       )}
 
-      <div className="btn-row" style={{ marginBottom: 16 }}>
-        <Link href="/owner/trips/new" className="btn">
-          ➕ {t("addTrip")}
+      <div style={{ paddingTop: 8, marginBottom: 16 }}>
+        <Link href="/owner/trips/new" className="fdash-addtrip">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <span>{t("addTrip")}</span>
         </Link>
       </div>
 
