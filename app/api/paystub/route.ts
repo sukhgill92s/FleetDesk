@@ -80,7 +80,7 @@ export async function GET(request: Request) {
         .order("trip_date"),
       admin
         .from("expenses")
-        .select("category,amount_cad,expense_date")
+        .select("category,amount_cad,expense_date,approved")
         .eq("driver_id", driverId)
         .eq("owner_id", user.id)
         .gte("expense_date", startISO)
@@ -89,7 +89,8 @@ export async function GET(request: Request) {
     ]);
 
     const tripRows = trips ?? [];
-    const expRows = expenses ?? [];
+    // Only approved expenses count toward pay (NULL = legacy rows, treated as approved).
+    const expRows = (expenses ?? []).filter((e) => e.approved !== false);
     const miles = tripRows.reduce((s, t) => s + Number(t.miles ?? 0), 0);
     const hours = tripRows.reduce((s, t) => s + Number(t.hours ?? 0), 0);
     const expTotal = expRows.reduce((s, e) => s + Number(e.amount_cad ?? 0), 0);
