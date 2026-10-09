@@ -268,6 +268,20 @@ export default function OwnerDashboard() {
                       {isOpen && (
                         <tr>
                           <td colSpan={4} style={{ paddingTop: 0 }}>
+                            <a
+                              className="btn btn-secondary"
+                              style={{
+                                display: "inline-block",
+                                marginBottom: 10,
+                                fontSize: 14,
+                                padding: "8px 14px",
+                                textDecoration: "none",
+                              }}
+                              href={`/api/paystub?driverId=${s.driver.id}&period=${payPeriod}&offset=${periodOffset}`}
+                              download
+                            >
+                              📄 {t("paystubPdf")}
+                            </a>
                             {dTrips.length === 0 ? (
                               <p className="muted">{t("noTripsYet")}</p>
                             ) : (
