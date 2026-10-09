@@ -988,3 +988,4 @@ table.data tfoot td {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .badge-completed { background: rgba(96, 165, 250, .12); color: #60a5fa; border: 1px solid rgba(96, 165, 250, .35); }
+.badge-rejected { background: rgba(239, 68, 68, .12); color: #ef4444; border: 1px solid rgba(239, 68, 68, .35); }
