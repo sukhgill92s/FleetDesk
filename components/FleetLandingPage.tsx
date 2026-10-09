@@ -9,25 +9,6 @@ function CardIcon({ children }: { children: React.ReactNode }) {
   return <div className="fleet-card-icon">{children}</div>;
 }
 
-function TruckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 6h11v10H3zM14 10h4l3 3v3h-7z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <circle cx="7" cy="18" r="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="18" cy="18" r="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function DriverIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M5 20c.8-3.4 3.1-5.2 7-5.2s6.2 1.8 7 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function RouteIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -47,20 +28,19 @@ function ReceiptIcon() {
   );
 }
 
-function WalletIcon() {
+function DocIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H19v16H6.5A2.5 2.5 0 0 1 4 17.5z" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M4 7h15M15 12h5v4h-5a2 2 0 1 1 0-4z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M6 3h9l4 4v14H6z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M15 3v4h4M9 12h7M9 16h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
 
-function InviteIcon() {
+function ChartIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 20V10M10 20V4M16 20v-8M21 20H3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -83,12 +63,10 @@ export default function FleetLandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const features = [
-    { icon: <DriverIcon />, title: "Drivers", text: "Driver profiles, documents and status in one place." },
-    { icon: <TruckIcon />, title: "Trucks", text: "Your whole fleet — units, plates and details." },
-    { icon: <RouteIcon />, title: "Trips", text: "Log trips and see where every load stands." },
-    { icon: <ReceiptIcon />, title: "Expenses", text: "Fuel, repairs, tolls — every cost tracked." },
-    { icon: <WalletIcon />, title: "Payroll", text: "Hourly or per-mile pay, calculated per period." },
-    { icon: <InviteIcon />, title: "Driver Invites", text: "Invite drivers by email — they set up in minutes." },
+    { icon: <RouteIcon />, title: "Trip Tracking", text: "Log trips and see where every load stands." },
+    { icon: <DocIcon />, title: "One-Click Paystubs", text: "Download driver paystubs as PDF, per pay period." },
+    { icon: <ReceiptIcon />, title: "Expense Approvals", text: "Review and approve driver expenses with receipts." },
+    { icon: <ChartIcon />, title: "Driver Pay Reports", text: "Export payroll to CSV — hourly or per-mile." },
   ];
 
   const checklist = [
@@ -137,18 +115,28 @@ export default function FleetLandingPage() {
 
       {/* ---------- Hero ---------- */}
       <section className="fleet-hero">
-        <h1>
-          Your Fleet. Your Drivers.
-          <br />
-          Your Numbers. <span className="fleet-accent">All in One Place.</span>
-        </h1>
+        <h1>Run Your Fleet Like a Pro</h1>
         <p className="fleet-sub">
-          Manage drivers, trucks, trips, expenses and payroll from one
-          simple fleet platform.
+          Trips, payroll, and expenses for small trucking
+          companies — in English and Punjabi.
         </p>
         <div className="fleet-hero-btns">
           <Link href="/signup" className="fleet-cta">Start Free</Link>
           <a href="#how-it-works" className="fleet-cta-ghost">See How It Works</a>
+        </div>
+      </section>
+
+      {/* ---------- Features ---------- */}
+      <section className="fleet-section" id="features">
+        <h2>Everything in one place</h2>
+        <div className="fleet-grid fleet-grid-2">
+          {features.map(({ icon, title, text }) => (
+            <div className="fleet-card" key={title}>
+              <CardIcon>{icon}</CardIcon>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -183,21 +171,6 @@ export default function FleetLandingPage() {
               </ul>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ---------- Features ---------- */}
-      <section className="fleet-section" id="features">
-        <h2>Everything in one place</h2>
-        <p className="fleet-kicker">One app replaces the paperwork</p>
-        <div className="fleet-grid fleet-grid-3">
-          {features.map(({ icon, title, text }) => (
-            <div className="fleet-card" key={title}>
-              <CardIcon>{icon}</CardIcon>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -248,14 +221,9 @@ export default function FleetLandingPage() {
       </section>
 
       {/* ---------- Final CTA ---------- */}
-      <section className="fleet-section">
-        <div className="fleet-cta-banner">
-          <div>
-            <h3>Ready to take control of your fleet?</h3>
-            <p>Start managing your drivers, trucks and expenses in one place.</p>
-          </div>
-          <Link href="/signup" className="fleet-cta">Get Started Free</Link>
-        </div>
+      <section className="fleet-cta-band">
+        <h2>Ready to simplify payroll?</h2>
+        <Link href="/signup" className="fleet-cta-light">Get Started Free →</Link>
       </section>
 
       {/* ---------- Footer ---------- */}
