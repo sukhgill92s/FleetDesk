@@ -27,6 +27,7 @@ interface Expense {
   expense_date: string;
   category: string;
   amount_cad: number;
+  approved: boolean | null;
 }
 
 export default function DriverHome() {
@@ -93,7 +94,7 @@ export default function DriverHome() {
           .order("trip_date", { ascending: false }),
         supabase
           .from("expenses")
-          .select("id,expense_date,category,amount_cad")
+          .select("id,expense_date,category,amount_cad,approved")
           .eq("driver_id", dRow.id)
           .gte("expense_date", startISO)
           .lte("expense_date", endISO)
@@ -278,7 +279,16 @@ export default function DriverHome() {
                 <strong>{e.category}</strong>
                 <span>{cad(Number(e.amount_cad))}</span>
               </div>
-              <div className="sub">{prettyDate(e.expense_date)}</div>
+              <div className="sub">
+                {prettyDate(e.expense_date)}{" "}
+                {e.approved === true ? (
+                  <span className="badge badge-delivered">✓ {t("approved")}</span>
+                ) : e.approved === false ? (
+                  <span className="badge badge-rejected">✗ {t("rejected")}</span>
+                ) : (
+                  <span className="badge">⏳ {t("pending")}</span>
+                )}
+              </div>
             </div>
           ))
         )}
