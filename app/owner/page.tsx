@@ -35,6 +35,7 @@ interface Expense {
   category: string;
   amount_cad: number;
   receipt_path: string | null;
+  approved: boolean | null;
 }
 
 export default function OwnerDashboard() {
@@ -81,7 +82,7 @@ export default function OwnerDashboard() {
           .lte("trip_date", endISO),
         supabase
           .from("expenses")
-          .select("id,driver_id,expense_date,category,amount_cad,receipt_path")
+          .select("id,driver_id,expense_date,category,amount_cad,receipt_path,approved")
           .gte("expense_date", startISO)
           .lte("expense_date", endISO)
           .order("expense_date", { ascending: false }),
@@ -121,6 +122,22 @@ export default function OwnerDashboard() {
     }
   }
 
+  async function setApproval(id: string, value: boolean) {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("expenses")
+        .update({ approved: value })
+        .eq("id", id);
+      if (error) throw error;
+      setExpenses((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, approved: value } : e))
+      );
+    } catch {
+      setError(t("errorGeneric"));
+    }
+  }
+
   const summary = drivers.map((d) => {
     const dTrips = trips.filter(
       (x) => x.driver_id === d.id && x.status !== "pending"
@@ -128,7 +145,9 @@ export default function OwnerDashboard() {
     const dPending = trips.filter(
       (x) => x.driver_id === d.id && x.status === "pending"
     );
-    const dExp = expenses.filter((x) => x.driver_id === d.id);
+    const dExp = expenses.filter(
+      (x) => x.driver_id === d.id && x.approved !== false
+    );
     const miles = dTrips.reduce((s, x) => s + Number(x.miles), 0);
     const hours = dTrips.reduce((s, x) => s + Number(x.hours ?? 0), 0);
     const expTotal = dExp.reduce((s, x) => s + Number(x.amount_cad), 0);
@@ -423,8 +442,35 @@ export default function OwnerDashboard() {
                           : `🧾 ${t("viewReceipt")}`}
                       </button>
                     </>
+                  )}{" "}
+                  {e.approved === true ? (
+                    <span className="badge badge-delivered">✓ {t("approved")}</span>
+                  ) : e.approved === false ? (
+                    <span className="badge badge-rejected">✗ {t("rejected")}</span>
+                  ) : (
+                    <span className="badge">⏳ {t("pending")}</span>
                   )}
                 </div>
+                {e.approved === null && (
+                  <div className="row" style={{ marginTop: 8, gap: 8 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: 14, padding: "8px 14px" }}
+                      onClick={() => setApproval(e.id, true)}
+                    >
+                      ✓ {t("approve")}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: 14, padding: "8px 14px" }}
+                      onClick={() => setApproval(e.id, false)}
+                    >
+                      ✗ {t("reject")}
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
