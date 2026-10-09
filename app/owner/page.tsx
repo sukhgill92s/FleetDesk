@@ -180,6 +180,14 @@ export default function OwnerDashboard() {
           >
             {t("nextPeriod")}
           </button>
+          <a
+            className="btn-ghost btn"
+            style={{ textDecoration: "none" }}
+            href={`/api/payroll-csv?period=${payPeriod}&offset=${periodOffset}`}
+            download
+          >
+            📊 {t("payrollCsv")}
+          </a>
         </div>
 
         {/* KPI summary cards */}
