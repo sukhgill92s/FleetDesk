@@ -406,6 +406,9 @@ export default function OwnerDashboard() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
           <span>{t("addTrip")}</span>
+        </Link>{" "}
+        <Link href="/owner/trips/import" className="fdash-addtrip">
+          <span>📥 Import from WhatsApp</span>
         </Link>
       </div>
 
