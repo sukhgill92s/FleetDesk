@@ -200,6 +200,9 @@ export default function DriverHome() {
           <Link href="/driver/trips/new" className="btn">
             ➕ {t("logTrip")}
           </Link>
+          <Link href="/driver/trips/import" className="btn">
+            📥 Import from WhatsApp
+          </Link>
           <Link href="/driver/expenses/new" className="btn btn-secondary">
             🧾 {t("logExpense")}
           </Link>
