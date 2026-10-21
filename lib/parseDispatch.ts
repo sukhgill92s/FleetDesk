@@ -2,6 +2,20 @@
 // Parses a pasted broker/dispatch WhatsApp message into trip fields.
 // Everything is best-effort: the review screen lets the user fix anything
 // the parser misses before the trip is created.
+//
+// Handles two message shapes:
+//  1. Broker style: "Brampton ON → Montreal QC, Oct 20, 16,900 kg, $1,790, Ref NG-5521"
+//  2. Carrier dispatch style (driver messages):
+//       Trip# 14484
+//       Truck# 1332 Trailer# FZ2078
+//       Pick #1
+//       2600 North Park DR BRAMPTON ON (Yard)
+//       Drop #1
+//       LOU-MAX
+//       88 Rte de Sainte-Hedwidge
+//       ROBERVAL QC G8H 2M9
+//       Date 10-22-26 Time 8AM
+//       Notes : **...**
 
 export interface ParsedDispatch {
   from: string;
@@ -12,12 +26,30 @@ export interface ParsedDispatch {
   rate: string; // CAD, digits only
   weight: string; // kg, digits only
   commodity: string;
+  truckNo: string; // unit number as written in the message, e.g. "1332"
+  trailerNo: string; // e.g. "FZ2078"
+  notes: string; // free-text notes line(s) from the message
 }
 
 const MONTHS: Record<string, number> = {
   jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
   jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
 };
+
+const PROVINCES = new Set([
+  "ON", "QC", "MB", "SK", "AB", "BC", "NB", "NS", "PE", "NL", "YT", "NT", "NU",
+]);
+const US_STATES = new Set([
+  "AL", "AZ", "AR", "CO", "CT", "DE", "FL", "GA", "ID", "IL", "IN", "IA", "KS",
+  "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+  "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN",
+  "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+]);
+const STREET_SUFFIXES = new Set([
+  "DR", "ST", "AV", "AVE", "RD", "BLVD", "LN", "CT", "CRT", "CRES", "HWY",
+  "RTE", "PKWY", "TRL", "WAY", "RUE", "CHEMIN", "ROUTE", "DRIVE", "STREET",
+  "AVENUE", "ROAD", "LANE", "COURT", "CRESCENT", "HIGHWAY", "PARKWAY", "TRAIL",
+]);
 
 function cleanPlace(s: string): string {
   return s
@@ -30,7 +62,88 @@ function toISODate(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
-const CITY = "[A-Za-z][A-Za-z .'\u2019\\-]{1,42}?";
+// Numeric date like 10-22-26 or 10/22/2026 (North American month-first;
+// swaps when the first number can only be a day).
+function numericDate(a: number, b: number, yRaw: number, now: Date): string {
+  let mo = a;
+  let d = b;
+  if (a > 12 && b >= 1 && b <= 12) {
+    mo = b;
+    d = a;
+  }
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return "";
+  let y = yRaw;
+  if (y < 100) y += 2000;
+  return toISODate(y, mo - 1, d);
+}
+
+// Finds "CITY, XX" on one address line by walking back from a province/state
+// code, skipping street suffixes ("2600 North Park DR BRAMPTON ON" -> "Brampton, ON").
+function cityFromLine(line: string, regions: Set<string>): string {
+  const words = line.replace(/[(),]/g, " ").split(/\s+/).filter(Boolean);
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i].toUpperCase().replace(/\.$/, "");
+    if (!regions.has(w)) continue;
+    const cityWords: string[] = [];
+    for (let j = i - 1; j >= 0 && cityWords.length < 3; j--) {
+      const prev = words[j].toUpperCase().replace(/\.$/, "");
+      if (STREET_SUFFIXES.has(prev)) break;
+      if (/^\d+$/.test(prev)) break;
+      if (/^[A-Z]\d[A-Z]$/i.test(prev)) break; // postal code fragment
+      if (!/^[A-Za-z'’-]+$/.test(words[j])) break;
+      cityWords.unshift(words[j]);
+    }
+    if (cityWords.length) {
+      const city = cityWords
+        .join(" ")
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      return `${city}, ${w}`;
+    }
+  }
+  return "";
+}
+
+function cityFromBlock(block: string): string {
+  if (!block) return "";
+  const lines = block.split("\n");
+  let found = "";
+  for (const l of lines) {
+    const c = cityFromLine(l, PROVINCES) || cityFromLine(l, US_STATES);
+    if (c) found = c; // last matching line wins (address line follows name line)
+  }
+  return found;
+}
+
+// Returns the text of the block that follows a "Pick #1" / "Drop #1" style
+// header line, up to the next section header. Any text on the header line
+// itself (after the header token) is included as the first block line.
+function blockAfter(text: string, headerRes: RegExp[]): string {
+  const lines = text.split("\n");
+  for (const re of headerRes) {
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(re);
+      if (!m) continue;
+      const out: string[] = [];
+      if (m[1] && m[1].trim()) out.push(m[1].trim());
+      for (let k = i + 1; k < lines.length; k++) {
+        if (
+          /^\s*(pick|pickup|drop|deliver|delivery|notes?|trip|truck|trailer)\b/i.test(
+            lines[k]
+          ) &&
+          lines[k].trim().length > 0
+        ) {
+          break;
+        }
+        out.push(lines[k]);
+      }
+      return out.join("\n");
+    }
+  }
+  return "";
+}
+
+const CITY = "[A-Za-z][A-Za-z .'\\u2019\\-]{1,42}?";
 
 export function parseDispatchMessage(raw: string): ParsedDispatch {
   const out: ParsedDispatch = {
@@ -42,6 +155,9 @@ export function parseDispatchMessage(raw: string): ParsedDispatch {
     rate: "",
     weight: "",
     commodity: "",
+    truckNo: "",
+    trailerNo: "",
+    notes: "",
   };
   if (!raw || !raw.trim()) return out;
   const text = raw.replace(/\r/g, "").replace(/[ \t]+/g, " ").trim();
@@ -55,16 +171,36 @@ export function parseDispatchMessage(raw: string): ParsedDispatch {
     const stripDay = (s: string) => s.replace(/^(today|tomorrow|tonight)\b\s*/i, "");
     out.from = cleanPlace(stripDay(`${arrow[1].trim()}, ${arrow[2]}`));
     out.to = cleanPlace(stripDay(`${arrow[3].trim()}, ${arrow[4]}`));
-  } else {
-    // labeled pickup / delivery lines
+  }
+
+  // ---- carrier dispatch blocks: "Pick #1 ... Drop #1 ..." ----
+  if (!out.from || !out.to) {
+    const pickBlock = blockAfter(text, [
+      /^\s*pick\s*#?\s*\d*\s*:?\s*(.*)$/i,
+      /^\s*pick\s*-?\s*up\b\s*:?\s*(.*)$/i,
+    ]);
+    const dropBlock = blockAfter(text, [
+      /^\s*drop\s*#?\s*\d*\s*:?\s*(.*)$/i,
+      /^\s*deliver(?:y)?\b\s*:?\s*(.*)$/i,
+    ]);
+    if (!out.from && pickBlock) out.from = cityFromBlock(pickBlock);
+    if (!out.to && dropBlock) out.to = cityFromBlock(dropBlock);
+  }
+
+  // ---- labeled pickup / delivery lines (fallback) ----
+  if (!out.from || !out.to) {
     const pu = text.match(
       /pick\s*-?\s*up\s*:?\s*([^\n;]+?)(?=\s*(?:deliver|drop|unload|consignee|pick\b)|$)/i
     );
     const del = text.match(
       /(?:deliver(?:y)?|drop(?:\s*-?\s*off)?|unload|consignee)\s*:?\s*([^\n;]+?)(?=\s+(?:rate|\$|weight|ref\b|p\.?\s*o\.?|date)\b|[;\n]|$)/i
     );
-    if (pu) out.from = cleanPlace(pu[1].replace(/^(today|tomorrow|tonight)\b\s*/i, ""));
-    if (del) out.to = cleanPlace(del[1].replace(/^(today|tomorrow|tonight)\b\s*/i, ""));
+    if (!out.from && pu)
+      out.from = cleanPlace(pu[1].replace(/^(today|tomorrow|tonight)\b\s*/i, ""));
+    if (!out.to && del) {
+      const v = cleanPlace(del[1].replace(/^(today|tomorrow|tonight)\b\s*/i, ""));
+      if (!/^#\d+$/.test(v)) out.to = v; // "Drop #1" header is not a place
+    }
   }
 
   // ---- rate: $1,790 ----
@@ -85,6 +221,22 @@ export function parseDispatchMessage(raw: string): ParsedDispatch {
   );
   if (ref) out.tripNo = ref[1].replace(/[.,;:]+$/g, "");
 
+  // ---- truck / trailer unit numbers ----
+  const truck = text.match(
+    /\b(?:truck|unit)\s*#\s*:?\s*([A-Za-z0-9][A-Za-z0-9-]{0,11})/i
+  );
+  if (truck) out.truckNo = truck[1].replace(/[.,;:]+$/g, "");
+  const trailer = text.match(
+    /\btrailer\s*#\s*:?\s*([A-Za-z0-9][A-Za-z0-9-]{0,11})/i
+  );
+  if (trailer) out.trailerNo = trailer[1].replace(/[.,;:]+$/g, "");
+
+  // ---- notes (to end of message) ----
+  const notes = text.match(/\bnotes?\s*:\s*([\s\S]+)$/i);
+  if (notes) {
+    out.notes = notes[1].replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
+  }
+
   // ---- distance: 542 km / 340 miles ----
   const dist = text.match(/([\d,]+(?:\.\d+)?)\s*(km|kilometers?|kilometres?|miles?|mi)\b/i);
   if (dist) {
@@ -101,28 +253,54 @@ export function parseDispatchMessage(raw: string): ParsedDispatch {
 
   // ---- date ----
   const now = new Date();
-  const md = text.match(
-    /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\b/i
+  // "Date 10-22-26" (labelled, dash or slash, 2- or 4-digit year)
+  const labeled = text.match(
+    /\bdate\s*:?\s*(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})\b/i
   );
-  if (md) {
-    const m = MONTHS[md[1].toLowerCase().slice(0, 3)];
-    const d = parseInt(md[2], 10);
-    let y = now.getFullYear();
-    const cand = new Date(y, m, d);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (cand.getTime() < today.getTime() - 2 * 864e5) y += 1; // probably next year
-    if (m !== undefined && d >= 1 && d <= 31) out.date = toISODate(y, m, d);
-  } else {
-    const sl = text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
-    if (sl) {
-      let y = sl[3] ? parseInt(sl[3], 10) : now.getFullYear();
-      if (y < 100) y += 2000;
-      out.date = toISODate(y, parseInt(sl[1], 10) - 1, parseInt(sl[2], 10));
-    } else if (/\btomorrow\b/i.test(text)) {
-      const t = new Date(now.getTime() + 864e5);
-      out.date = toISODate(t.getFullYear(), t.getMonth(), t.getDate());
-    } else if (/\btoday\b/i.test(text)) {
-      out.date = toISODate(now.getFullYear(), now.getMonth(), now.getDate());
+  if (labeled) {
+    out.date = numericDate(
+      parseInt(labeled[1], 10),
+      parseInt(labeled[2], 10),
+      parseInt(labeled[3], 10),
+      now
+    );
+  }
+  // any other dash date: 10-22-26
+  if (!out.date) {
+    const dash = text.match(/\b(\d{1,2})-(\d{1,2})-(\d{2,4})\b/);
+    if (dash) {
+      out.date = numericDate(
+        parseInt(dash[1], 10),
+        parseInt(dash[2], 10),
+        parseInt(dash[3], 10),
+        now
+      );
+    }
+  }
+  if (!out.date) {
+    const md = text.match(
+      /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\b/i
+    );
+    if (md) {
+      const m = MONTHS[md[1].toLowerCase().slice(0, 3)];
+      const d = parseInt(md[2], 10);
+      let y = now.getFullYear();
+      const cand = new Date(y, m, d);
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (cand.getTime() < today.getTime() - 2 * 864e5) y += 1; // probably next year
+      if (m !== undefined && d >= 1 && d <= 31) out.date = toISODate(y, m, d);
+    } else {
+      const sl = text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+      if (sl) {
+        let y = sl[3] ? parseInt(sl[3], 10) : now.getFullYear();
+        if (y < 100) y += 2000;
+        out.date = toISODate(y, parseInt(sl[1], 10) - 1, parseInt(sl[2], 10));
+      } else if (/\btomorrow\b/i.test(text)) {
+        const t = new Date(now.getTime() + 864e5);
+        out.date = toISODate(t.getFullYear(), t.getMonth(), t.getDate());
+      } else if (/\btoday\b/i.test(text)) {
+        out.date = toISODate(now.getFullYear(), now.getMonth(), now.getDate());
+      }
     }
   }
 
