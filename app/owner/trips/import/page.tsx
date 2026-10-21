@@ -45,6 +45,7 @@ export default function OwnerImportTripPage() {
   const [truckId, setTruckId] = useState("");
   const [trailerNo, setTrailerNo] = useState("");
   const [dispatchNotes, setDispatchNotes] = useState("");
+  const [dispatchTruckNo, setDispatchTruckNo] = useState("");
 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -99,11 +100,29 @@ export default function OwnerImportTripPage() {
     setWeight(p.weight);
     setCommodity(p.commodity);
     if (p.truckNo) {
-      const match = trucks.find(
-        (t) =>
-          t.unit_number.trim().toLowerCase() === p.truckNo.trim().toLowerCase()
-      );
-      if (match) setTruckId(match.id);
+      const digits = (s: string) => s.replace(/\D/g, "");
+      const match =
+        trucks.find(
+          (t) =>
+            t.unit_number.trim().toLowerCase() ===
+            p.truckNo.trim().toLowerCase()
+        ) ??
+        trucks.find(
+          (t) =>
+            digits(t.unit_number) !== "" &&
+            digits(t.unit_number) === digits(p.truckNo)
+        );
+      if (match) {
+        setTruckId(match.id);
+        setDispatchTruckNo("");
+      } else {
+        // Not in the fleet yet — preselect the "add from dispatch" option so
+        // creating the trip adds the truck to the fleet too.
+        setDispatchTruckNo(p.truckNo);
+        setTruckId("__new__");
+      }
+    } else {
+      setDispatchTruckNo("");
     }
     setTrailerNo(p.trailerNo);
     setDispatchNotes(p.notes);
@@ -132,6 +151,16 @@ export default function OwnerImportTripPage() {
     setSaving(true);
     try {
       const supabase = createClient();
+      let finalTruckId = truckId;
+      if (truckId === "__new__" && dispatchTruckNo) {
+        const { data: nt, error: ntErr } = await supabase
+          .from("trucks")
+          .insert({ owner_id: ownerId, unit_number: dispatchTruckNo })
+          .select("id")
+          .single();
+        if (ntErr) throw ntErr;
+        finalTruckId = nt.id;
+      }
       const { error } = await supabase.from("trips").insert({
         owner_id: ownerId,
         driver_id: driverId,
@@ -142,7 +171,7 @@ export default function OwnerImportTripPage() {
         to_location: to.trim(),
         miles: milesNum,
         hours: hourly ? hoursNum : null,
-        truck_id: truckId || null,
+        truck_id: finalTruckId || null,
         rate_cad: rate.trim() ? parseFloat(rate) : null,
         weight_kg: weight.trim() ? parseFloat(weight) : null,
         commodity: commodity.trim() || null,
@@ -369,6 +398,11 @@ export default function OwnerImportTripPage() {
                   {tr.unit_number}
                 </option>
               ))}
+              {dispatchTruckNo && (
+                <option value="__new__">
+                  ➕ Add truck {dispatchTruckNo} (from dispatch)
+                </option>
+              )}
             </select>
           </div>
 
