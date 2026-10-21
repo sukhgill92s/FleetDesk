@@ -37,6 +37,8 @@ export default function DriverImportTripPage() {
   const [weight, setWeight] = useState("");
   const [commodity, setCommodity] = useState("");
   const [truckId, setTruckId] = useState("");
+  const [trailerNo, setTrailerNo] = useState("");
+  const [dispatchNotes, setDispatchNotes] = useState("");
 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -91,6 +93,15 @@ export default function DriverImportTripPage() {
     setRate(p.rate);
     setWeight(p.weight);
     setCommodity(p.commodity);
+    if (p.truckNo) {
+      const match = trucks.find(
+        (t) =>
+          t.unit_number.trim().toLowerCase() === p.truckNo.trim().toLowerCase()
+      );
+      if (match) setTruckId(match.id);
+    }
+    setTrailerNo(p.trailerNo);
+    setDispatchNotes(p.notes);
     setParsed(true);
     setError("");
   }
@@ -189,6 +200,22 @@ export default function DriverImportTripPage() {
             <summary>View pasted message</summary>
             <p style={{ whiteSpace: "pre-wrap" }}>{raw}</p>
           </details>
+
+          {(trailerNo || dispatchNotes) && (
+            <div
+              style={{
+                border: "1px solid #ddd6c2",
+                background: "#fbf8ef",
+                borderRadius: 8,
+                padding: "10px 12px",
+                marginBottom: 12,
+              }}
+            >
+              <strong>From the dispatch message</strong>
+              {trailerNo && <div>🚛 Trailer: {trailerNo}</div>}
+              {dispatchNotes && <div>📝 {dispatchNotes}</div>}
+            </div>
+          )}
 
           <div className="field">
             <label htmlFor="i-from">From</label>
