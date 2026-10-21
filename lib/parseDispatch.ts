@@ -1,5 +1,6 @@
 // lib/parseDispatch.ts
 // Parses a pasted broker/dispatch WhatsApp message into trip fields.
+// v2: full street addresses from Pick/Drop blocks (not just city).
 // Everything is best-effort: the review screen lets the user fix anything
 // the parser misses before the trip is created.
 //
