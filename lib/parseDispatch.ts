@@ -80,6 +80,25 @@ function numericDate(a: number, b: number, yRaw: number, now: Date): string {
 // Finds "CITY, XX" on one address line by walking back from a province/state
 // code, skipping street suffixes ("2600 North Park DR BRAMPTON ON" -> "Brampton, ON").
 function cityFromLine(line: string, regions: Set<string>): string {
+  const parts = cityPartsFromLine(line, regions);
+  return parts ? `${parts.city}, ${parts.prov}` : "";
+}
+
+interface CityParts {
+  city: string;
+  prov: string;
+  before: string[]; // words on the line before the city (street portion)
+  postal: string;
+  paren: string; // "(Yard)" style note on the line
+}
+
+function cityPartsFromLine(line: string, regions: Set<string>): CityParts | null {
+  const parenMatch = line.match(/\(([^)]+)\)/);
+  const paren = parenMatch ? parenMatch[1].trim() : "";
+  const postalMatch = line.match(/\b([A-Z]\d[A-Z])\s?(\d[A-Z]\d)\b/i);
+  const postal = postalMatch
+    ? `${postalMatch[1].toUpperCase()} ${postalMatch[2].toUpperCase()}`
+    : "";
   const words = line.replace(/[(),]/g, " ").split(/\s+/).filter(Boolean);
   for (let i = 1; i < words.length; i++) {
     const w = words[i].toUpperCase().replace(/\.$/, "");
@@ -98,10 +117,16 @@ function cityFromLine(line: string, regions: Set<string>): string {
         .join(" ")
         .toLowerCase()
         .replace(/\b\w/g, (c) => c.toUpperCase());
-      return `${city}, ${w}`;
+      return {
+        city,
+        prov: w,
+        before: words.slice(0, i - cityWords.length),
+        postal,
+        paren,
+      };
     }
   }
-  return "";
+  return null;
 }
 
 function cityFromBlock(block: string): string {
@@ -113,6 +138,40 @@ function cityFromBlock(block: string): string {
     if (c) found = c; // last matching line wins (address line follows name line)
   }
   return found;
+}
+
+// Full postal address from a Pick/Drop block: company and street lines above
+// the city line, plus the street portion of the city line itself.
+//   "2600 North Park DR BRAMPTON ON (Yard)" -> "2600 North Park DR, Brampton, ON (Yard)"
+//   "LOU-MAX / 88 Rte de Sainte-Hedwidge / ROBERVAL QC G8H 2M9"
+//     -> "LOU-MAX, 88 Rte de Sainte-Hedwidge, Roberval, QC G8H 2M9"
+function addressFromBlock(block: string): string {
+  if (!block) return "";
+  const rawLines = block
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .filter((l) => !/^(date|time)\b/i.test(l));
+  let cityIdx = -1;
+  let parts: CityParts | null = null;
+  rawLines.forEach((l, idx) => {
+    const p = cityPartsFromLine(l, PROVINCES) || cityPartsFromLine(l, US_STATES);
+    if (p) {
+      parts = p;
+      cityIdx = idx;
+    }
+  });
+  if (!parts || cityIdx < 0) return "";
+  const found: CityParts = parts;
+  const head = rawLines.slice(0, cityIdx);
+  const streetLine = found.before.join(" ").trim();
+  const streetParts = [...head, ...(streetLine ? [streetLine] : [])]
+    .map((s) => s.replace(/,+$/, "").trim())
+    .filter(Boolean);
+  let addr = [...streetParts, `${found.city}, ${found.prov}`].join(", ");
+  if (found.postal) addr += ` ${found.postal}`;
+  if (found.paren) addr += ` (${found.paren})`;
+  return addr;
 }
 
 // Returns the text of the block that follows a "Pick #1" / "Drop #1" style
@@ -183,8 +242,10 @@ export function parseDispatchMessage(raw: string): ParsedDispatch {
       /^\s*drop\s*#?\s*\d*\s*:?\s*(.*)$/i,
       /^\s*deliver(?:y)?\b\s*:?\s*(.*)$/i,
     ]);
-    if (!out.from && pickBlock) out.from = cityFromBlock(pickBlock);
-    if (!out.to && dropBlock) out.to = cityFromBlock(dropBlock);
+    if (!out.from && pickBlock)
+      out.from = addressFromBlock(pickBlock) || cityFromBlock(pickBlock);
+    if (!out.to && dropBlock)
+      out.to = addressFromBlock(dropBlock) || cityFromBlock(dropBlock);
   }
 
   // ---- labeled pickup / delivery lines (fallback) ----
