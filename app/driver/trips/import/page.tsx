@@ -39,6 +39,7 @@ export default function DriverImportTripPage() {
   const [truckId, setTruckId] = useState("");
   const [trailerNo, setTrailerNo] = useState("");
   const [dispatchNotes, setDispatchNotes] = useState("");
+  const [dispatchTruckNo, setDispatchTruckNo] = useState("");
 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -94,11 +95,26 @@ export default function DriverImportTripPage() {
     setWeight(p.weight);
     setCommodity(p.commodity);
     if (p.truckNo) {
-      const match = trucks.find(
-        (t) =>
-          t.unit_number.trim().toLowerCase() === p.truckNo.trim().toLowerCase()
-      );
-      if (match) setTruckId(match.id);
+      const digits = (s: string) => s.replace(/\D/g, "");
+      const match =
+        trucks.find(
+          (t) =>
+            t.unit_number.trim().toLowerCase() ===
+            p.truckNo.trim().toLowerCase()
+        ) ??
+        trucks.find(
+          (t) =>
+            digits(t.unit_number) !== "" &&
+            digits(t.unit_number) === digits(p.truckNo)
+        );
+      if (match) {
+        setTruckId(match.id);
+        setDispatchTruckNo("");
+      } else {
+        setDispatchTruckNo(p.truckNo);
+      }
+    } else {
+      setDispatchTruckNo("");
     }
     setTrailerNo(p.trailerNo);
     setDispatchNotes(p.notes);
@@ -201,7 +217,7 @@ export default function DriverImportTripPage() {
             <p style={{ whiteSpace: "pre-wrap" }}>{raw}</p>
           </details>
 
-          {(trailerNo || dispatchNotes) && (
+          {(trailerNo || dispatchNotes || dispatchTruckNo) && (
             <div
               style={{
                 border: "1px solid #ddd6c2",
@@ -213,6 +229,12 @@ export default function DriverImportTripPage() {
             >
               <strong>From the dispatch message</strong>
               {trailerNo && <div>🚛 Trailer: {trailerNo}</div>}
+              {dispatchTruckNo && (
+                <div>
+                  🚚 Truck {dispatchTruckNo} — not in the fleet list yet (your
+                  owner can add it)
+                </div>
+              )}
               {dispatchNotes && <div>📝 {dispatchNotes}</div>}
             </div>
           )}
